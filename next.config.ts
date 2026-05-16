@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
       },
     ],
+  },
 };
 
 export default nextConfig;
