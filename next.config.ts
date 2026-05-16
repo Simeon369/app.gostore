@@ -12,12 +12,6 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
       },
     ],
-  },
-  experimental: {
-    turbopack: {
-      root: __dirname,
-    },
-  },
 };
 
 export default nextConfig;
