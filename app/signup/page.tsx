@@ -49,13 +49,13 @@ export default function SignupPage() {
       <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] -z-10" />
 
-      <Link 
+      {/* <Link 
         href="/" 
         className="absolute top-8 left-8 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to Home
-      </Link>
+      </Link> */}
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -63,13 +63,13 @@ export default function SignupPage() {
         className="w-full max-w-md flex flex-col gap-8"
       >
         <div className="flex flex-col items-center gap-2 text-center">
-          <Image
+          {/* <Image
             src="/gostore-logo.png"
             alt="GoStore Logo"
             width={48}
             height={48}
             className="w-12 h-12 mb-2"
-          />
+          /> */}
           <h1 className="text-3xl font-bold tracking-tight">Create Your Store</h1>
           <p className="text-zinc-400">Join thousands of creators on GoStore</p>
         </div>
@@ -129,23 +129,23 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <div className="relative py-2">
+          {/* <div className="relative py-2">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/5" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-[#050505] px-2 text-zinc-500 font-bold tracking-widest">Or sign up with</span>
             </div>
-          </div>
+          </div> */}
 
-          <div className="grid grid-cols-1 gap-4">
+          {/* <div className="grid grid-cols-1 gap-4">
             <button 
               onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
               className="flex items-center justify-center gap-2 py-3 rounded-2xl glass-card hover:bg-white/5 transition-all text-sm font-bold"
             >
               <Mail className="w-4 h-4" /> Google
             </button>
-          </div>
+          </div> */}
         </div>
 
         <p className="text-center text-zinc-500 font-medium">

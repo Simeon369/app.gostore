@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Store, Building2, Package, Rocket, ArrowRight, Loader2, CheckCircle2, Upload, Info, Copy } from "lucide-react";
+import { Store, Building2, Package, Rocket, ArrowRight, Loader2, CheckCircle2, Copy, Building } from "lucide-react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import { cn } from "@/utils/cn";
+import { createClient } from "@/utils/supabase/client";
 
 export function OnboardingWizard() {
+  const supabase = createClient();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -15,7 +17,7 @@ export function OnboardingWizard() {
   // Step 1 State
   const [storeName, setStoreName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [category, setCategory] = useState("Fashion");
+  const [category, setCategory] = useState("Fashion & Apparel");
 
   // Step 2 State
   const [bankName, setBankName] = useState("Guaranty Trust Bank (GTB)");
@@ -30,11 +32,6 @@ export function OnboardingWizard() {
     tiktok: false
   });
 
-  // Step 3 State
-  const [productName, setProductName] = useState("");
-  const [productPrice, setProductPrice] = useState("");
-  const [isPreorder, setIsPreorder] = useState(false);
-
   const handleNext = () => setStep((s) => s + 1);
   const handleBack = () => setStep((s) => s - 1);
 
@@ -48,24 +45,59 @@ export function OnboardingWizard() {
     }, 1500);
   };
 
-  const handleLaunch = () => {
+  const handleLaunch = async () => {
     setLoading(true);
-    // Trigger confetti
-    confetti({
-      particleCount: 150,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#86c02e", "#10b981", "#ffffff"]
-    });
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("No user found. Please login.");
+      }
 
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 3000);
+      const slug = storeName.toLowerCase().replace(/\s+/g, '-');
+
+      // 1. Create the store
+      const { error: storeError } = await supabase
+        .from('stores')
+        .insert({
+          user_id: user.id,
+          name: storeName,
+          slug,
+          category,
+          whatsapp,
+          bank_name: bankName,
+          account_number: accountNumber,
+          account_name: accountName,
+          socials,
+          status: 'Live'
+        });
+
+      if (storeError) throw storeError;
+
+      // Trigger confetti
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#86c02e", "#10b981", "#ffffff"]
+      });
+
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 3000);
+    } catch (error: any) {
+      console.error("Error launching store:", error);
+      alert(error.message || "Failed to create store. Please try again.");
+      setLoading(false);
+    }
   };
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`https://gostore.ee/${storeName.toLowerCase().replace(/\s+/g, '-')}?src=wa`);
-    // Optional: add a toast here
+    const slug = storeName.toLowerCase().replace(/\s+/g, '-');
+    const url = `https://gostore.ee/${slug}?src=wa`;
+    navigator.clipboard.writeText(url);
+    alert("Link copied!");
   };
 
   const stepVariants = {
@@ -350,6 +382,7 @@ export function OnboardingWizard() {
       <div className="p-6 border-t border-border bg-card relative z-10 flex items-center justify-between">
         {step > 1 ? (
           <button 
+            type="button"
             onClick={handleBack}
             className="px-6 py-3 rounded-2xl text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
           >
@@ -361,6 +394,7 @@ export function OnboardingWizard() {
 
         {step < 4 ? (
           <button 
+            type="button"
             onClick={handleNext}
             disabled={
               (step === 1 && (!storeName || !whatsapp)) ||
@@ -372,6 +406,7 @@ export function OnboardingWizard() {
           </button>
         ) : (
           <button 
+            type="button"
             onClick={handleLaunch}
             disabled={loading}
             className="px-8 py-4 w-full md:w-auto rounded-[24px] brand-gradient text-primary-foreground font-black flex items-center justify-center gap-2 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_30px_rgba(158,226,55,0.4)]"

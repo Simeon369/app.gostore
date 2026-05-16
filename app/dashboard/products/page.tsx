@@ -1,22 +1,88 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, ExternalLink, Package } from "lucide-react";
-import { MOCK_PRODUCTS } from "@/lib/mock-data";
+import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, ExternalLink, Package, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { cn } from "@/utils/cn";
 import { CreateProductModal } from "@/components/dashboard/create-product-modal";
+import { createClient } from "@/utils/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ProductsPage() {
-  // For the MVP, we'll show products for store #1
-  const products = MOCK_PRODUCTS["1"];
+  const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const filteredProducts = products.filter(p => 
+  const { data: productsData, isLoading, refetch } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // 1. Get user's store
+      const { data: store } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!store) return [];
+
+      // 2. Get products for this store
+      const { data: products } = await supabase
+        .from('products')
+        .select('*')
+        .eq('store_id', store.id)
+        .order('created_at', { ascending: false });
+
+      return products || [];
+    }
+  });
+
+  const handleDelete = async (product: any) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    
+    setDeletingId(product.id);
+
+    try {
+      // 1. Delete image from storage if image_path exists
+      if (product.image_path) {
+        const { error: storageError } = await supabase.storage
+          .from('product-images')
+          .remove([product.image_path]);
+        
+        if (storageError) console.error("Error deleting image:", storageError);
+      }
+
+      // 2. Delete product from database
+      const { error: dbError } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', product.id);
+
+      if (dbError) throw dbError;
+
+      refetch();
+    } catch (error: any) {
+      alert(error.message || "Failed to delete product");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const filteredProducts = productsData?.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-10">
@@ -80,8 +146,12 @@ export default function ProductsPage() {
                 >
                   <td className="px-3 py-3 lg:px-8 lg:py-5">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden relative border border-border">
-                        <Image src={product.image} alt={product.name} fill className="object-cover" />
+                      <div className="w-12 h-12 rounded-xl overflow-hidden relative border border-border bg-muted">
+                        {product.image ? (
+                          <Image src={product.image} alt={product.name} fill className="object-cover" />
+                        ) : (
+                          <Package className="w-6 h-6 m-auto text-muted-foreground opacity-20" />
+                        )}
                       </div>
                       <div>
                         <p className="font-bold text-sm text-foreground">{product.name}</p>
@@ -90,7 +160,7 @@ export default function ProductsPage() {
                     </div>
                   </td>
                   <td className="px-3 py-3 lg:px-8 lg:py-5 font-bold text-sm text-foreground">
-                    ₦{product.price.toLocaleString()}
+                    ₦{Number(product.price).toLocaleString()}
                   </td>
                   <td className="px-3 py-3 lg:px-8 lg:py-5">
                     <div className="flex items-center gap-2">
@@ -99,7 +169,7 @@ export default function ProductsPage() {
                         "text-sm font-bold",
                         product.is_preorder 
                           ? "text-primary" 
-                          : product.stock < 5 ? "text-orange-500" : "text-muted-foreground"
+                          : Number(product.stock) < 5 ? "text-orange-500" : "text-muted-foreground"
                       )}>
                         {product.is_preorder ? "Pre-order" : `${product.stock} in stock`}
                       </span>
@@ -108,9 +178,9 @@ export default function ProductsPage() {
                   <td className="px-3 py-3 lg:px-8 lg:py-5">
                     <span className={cn(
                       "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                      product.stock > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                      Number(product.stock) > 0 || product.is_preorder ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
                     )}>
-                      {product.stock > 0 ? "Active" : "Out of Stock"}
+                      {Number(product.stock) > 0 || product.is_preorder ? "Active" : "Out of Stock"}
                     </span>
                   </td>
                   <td className="px-3 py-3 lg:px-8 lg:py-5">
@@ -118,8 +188,16 @@ export default function ProductsPage() {
                       <button className="p-2 hover:bg-white/5 rounded-xl transition-all group-hover:text-primary">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button className="p-2 hover:bg-red-500/5 rounded-xl transition-all hover:text-red-400">
-                        <Trash2 className="w-4 h-4" />
+                      <button 
+                        onClick={() => handleDelete(product)}
+                        disabled={deletingId === product.id}
+                        className="p-2 hover:bg-red-500/5 rounded-xl transition-all hover:text-red-400 disabled:opacity-50"
+                      >
+                        {deletingId === product.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </button>
                       <button className="p-2 hover:bg-white/5 rounded-xl transition-all">
                         <MoreVertical className="w-4 h-4" />
@@ -148,7 +226,8 @@ export default function ProductsPage() {
 
       <CreateProductModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => refetch()}
       />
     </div>
   );

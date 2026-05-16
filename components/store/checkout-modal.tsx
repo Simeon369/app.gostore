@@ -1,35 +1,98 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { X, MapPin, Truck, Phone, User, Home, Loader2, ArrowRight } from "lucide-react";
-import { Store, Product } from "@/lib/mock-data";
-import { useState } from "react";
+import { X, MapPin, Truck, Phone, User, Home, Loader2, ArrowRight, Mail } from "lucide-react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/utils/cn";
+import { createClient } from "@/utils/supabase/client";
+import { toast } from "sonner";
 
 interface CheckoutModalProps {
-  product: Product;
-  store: Store;
+  product: any;
+  store: any;
   onClose: () => void;
 }
 
 export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
+  const supabase = createClient();
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Delivery Info, 2: Payment Prep
 
-  const deliveryFee = selectedZone ? selectedZone.price : 0;
-  const total = product.price + deliveryFee;
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+
+  const deliveryFee = selectedZone ? Number(selectedZone.price) : 0;
+  const total = Number(product.price) + deliveryFee;
+
+  // Load Paystack SDK
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedZone && store.deliveryZones?.length > 0) {
+      toast.error("Please select a delivery zone");
+      return;
+    }
+
     setLoading(true);
     
-    // Simulate Monnify transaction creation
-    setTimeout(() => {
+    try {
+      // 1. Generate a reference
+      const paymentReference = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      
+      // 2. Open Paystack Inline SDK
+      // @ts-ignore
+      if (!window.PaystackPop) {
+        throw new Error("Payment gateway is still loading. Please wait a moment and try again.");
+      }
+
+      // @ts-ignore
+      const handler = window.PaystackPop.setup({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+        email: customerEmail,
+        amount: Math.round(total * 100), // Paystack expects kobo
+        currency: "NGN",
+        ref: paymentReference,
+        subaccount: store.paystack_sub_account_code || undefined,
+        metadata: {
+          store_id: store.id,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_address: customerAddress,
+          items: JSON.stringify([{ productId: product.id, quantity: 1, price: product.price }]),
+          total: total,
+          delivery_fee: deliveryFee,
+          source: 'Direct'
+        },
+        callback: function(response: any) {
+          console.log("Paystack Response:", response);
+          // Redirect to verification
+          window.location.href = `/api/payment/verify/paystack?ref=${response.reference}&storeId=${store.id}`;
+        },
+        onClose: function() {
+          setLoading(false);
+          toast.error("Payment window closed");
+        }
+      });
+      handler.openIframe();
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      toast.error(error.message || "Something went wrong. Please try again.");
       setLoading(false);
-      setStep(2);
-    }, 1500);
+    }
   };
 
   return (
@@ -52,11 +115,15 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
           {/* Summary */}
           <div className="flex gap-4 p-4 rounded-3xl glass-card">
             <div className="relative w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0">
-              <Image src={product.image} alt={product.name} fill className="object-cover" />
+              {product.image ? (
+                <Image src={product.image} alt={product.name} fill className="object-cover" />
+              ) : (
+                <div className="absolute inset-0 bg-muted flex items-center justify-center" />
+              )}
             </div>
             <div className="flex flex-col justify-center gap-1">
               <h3 className="font-bold text-sm leading-tight">{product.name}</h3>
-              <p className="text-primary font-black">₦{product.price.toLocaleString()}</p>
+              <p className="text-primary font-black">₦{Number(product.price).toLocaleString()}</p>
             </div>
           </div>
 
@@ -71,6 +138,8 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                 <div className="flex flex-col gap-2">
                   <input 
                     type="text" 
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Full Name" 
                     required 
                     className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-600 text-sm"
@@ -78,14 +147,28 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                 </div>
                 <div className="flex flex-col gap-2">
                   <input 
+                    type="email" 
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="Email Address (for receipt)" 
+                    required 
+                    className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-600 text-sm"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <input 
                     type="tel" 
-                    placeholder="Phone Number (WhatsApp preferred)" 
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Phone Number" 
                     required 
                     className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-600 text-sm"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
                   <textarea 
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
                     placeholder="Delivery Address" 
                     required 
                     rows={2}
@@ -102,7 +185,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
               </div>
 
               <div className="grid grid-cols-1 gap-2">
-                {store.deliveryZones.map((zone) => (
+                {store.deliveryZones?.map((zone: any) => (
                   <button
                     key={zone.name}
                     type="button"
@@ -115,9 +198,12 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                     )}
                   >
                     <span>{zone.name}</span>
-                    <span>+ ₦{zone.price.toLocaleString()}</span>
+                    <span>+ ₦{Number(zone.price).toLocaleString()}</span>
                   </button>
                 ))}
+                {!store.deliveryZones && (
+                   <p className="text-xs text-zinc-500 p-4 bg-white/5 rounded-2xl italic">No delivery zones configured. Shipping is free.</p>
+                )}
               </div>
             </div>
 
@@ -125,7 +211,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
             <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex flex-col gap-3">
               <div className="flex justify-between text-sm text-zinc-400">
                 <span>Subtotal</span>
-                <span>₦{product.price.toLocaleString()}</span>
+                <span>₦{Number(product.price).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm text-zinc-400">
                 <span>Delivery Fee</span>
@@ -139,7 +225,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
             </div>
 
             <button
-              disabled={!selectedZone || loading}
+              disabled={(!selectedZone && store.deliveryZones?.length > 0) || loading}
               className="w-full py-5 rounded-[24px] brand-gradient text-primary-foreground font-black text-lg shadow-[0_0_30px_rgba(158,226,55,0.3)] hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
             >
               {loading ? (

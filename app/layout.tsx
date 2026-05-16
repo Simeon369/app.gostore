@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   description: "The premium platform for managing your storefronts.",
 };
 
+import { Toaster } from "sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,7 +40,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            {children}
+            <Toaster position="top-center" richColors />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

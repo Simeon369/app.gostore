@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ThemeToggle } from "./theme-toggle";
 import { Sidebar } from "./sidebar";
 
-export function Header({ user }: { user: any }) {
+export function Header({ user, store }: { user: any; store: any }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -36,17 +36,19 @@ export function Header({ user }: { user: any }) {
             <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
           </button>
 
-          <div className="h-8 w-[1px] bg-border mx-1 hidden sm:block" />
 
-          <div className="flex items-center gap-2">
+
+          {/* <div className="flex items-center gap-2">
             <div className="hidden sm:block text-right">
-              <p className="text-sm font-bold text-foreground leading-tight">{user.user_metadata?.store_name || "New Store"}</p>
-              <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Creator</p>
+              <p className="text-sm font-black text-foreground leading-tight truncate max-w-[150px]">
+                {store?.name || "New Store"}
+              </p>
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Creator Account</p>
             </div>
             <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl brand-gradient flex items-center justify-center text-primary-foreground font-bold shadow-lg text-sm">
               {user.email?.[0].toUpperCase()}
             </div>
-          </div>
+          </div> */}
         </div>
       </header>
 
@@ -66,7 +68,7 @@ export function Header({ user }: { user: any }) {
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
-            <Sidebar user={user} onNavigate={() => setMobileOpen(false)} />
+            <Sidebar user={user} store={store} onNavigate={() => setMobileOpen(false)} />
           </div>
         </div>
       )}

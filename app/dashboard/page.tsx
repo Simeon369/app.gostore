@@ -1,56 +1,83 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ShoppingBag, Eye, TrendingUp, ArrowUpRight, ArrowDownRight, Plus, Copy, Check, MessageCircle, Share2 } from "lucide-react";
+import { Store, ShoppingBag, Eye, TrendingUp, ArrowUpRight, ArrowDownRight, Plus, Copy, Check, MessageCircle, Share2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/utils/cn";
-
-const platformData = [
-  {
-    platform: "WhatsApp",
-    color: "bg-emerald-500",
-    lightColor: "bg-emerald-500/10",
-    textColor: "text-emerald-500",
-    sales: 85000,
-    orders: 6,
-    views: 312,
-  },
-  {
-    platform: "Instagram",
-    color: "bg-pink-500",
-    lightColor: "bg-pink-500/10",
-    textColor: "text-pink-500",
-    sales: 42000,
-    orders: 3,
-    views: 841,
-  },
-  {
-    platform: "TikTok",
-    color: "bg-sky-400",
-    lightColor: "bg-sky-400/10",
-    textColor: "text-sky-400",
-    sales: 28000,
-    orders: 2,
-    views: 2043,
-  },
-];
-
-const totalSales = platformData.reduce((a, b) => a + b.sales, 0);
-const totalOrders = platformData.reduce((a, b) => a + b.orders, 0);
-const totalViews = platformData.reduce((a, b) => a + b.views, 0);
-
-const storeSlug = "luxe";
-const storeUrl = `https://gostore.ee/${storeSlug}`;
-
-const socialLinks = [
-  { id: "wa", label: "WhatsApp", icon: MessageCircle, color: "text-emerald-500", bg: "bg-emerald-500/10", borderActive: "border-emerald-500/30", url: `${storeUrl}?src=wa` },
-  { id: "ig", label: "Instagram", icon: Share2, color: "text-pink-500", bg: "bg-pink-500/10", borderActive: "border-pink-500/30", url: `${storeUrl}?src=ig` },
-  { id: "tt", label: "TikTok", icon: Share2, color: "text-sky-400", bg: "bg-sky-400/10", borderActive: "border-sky-400/30", url: `${storeUrl}?src=tt` },
-];
+import { createClient } from "@/utils/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function DashboardPage() {
+  const supabase = createClient();
   const [copied, setCopied] = useState<string | null>(null);
+
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Fetch store
+      const { data: store } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!store) return { store: null };
+
+      // Fetch orders for this store
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('store_id', store.id);
+
+      // Calculate stats
+      const totalSales = orders?.reduce((acc, order) => acc + (order.status === 'Paid' ? Number(order.total) : 0), 0) || 0;
+      const totalOrders = orders?.length || 0;
+      const totalViews = store.visits || 0;
+
+      // Group orders by source (simulating platform breakdown)
+      const platformBreakdown = [
+        {
+          platform: "WhatsApp",
+          color: "bg-emerald-500",
+          lightColor: "bg-emerald-500/10",
+          textColor: "text-emerald-500",
+          sales: orders?.filter(o => o.source === 'WhatsApp' && o.status === 'Paid').reduce((acc, o) => acc + Number(o.total), 0) || 0,
+          orders: orders?.filter(o => o.source === 'WhatsApp').length || 0,
+          views: Math.floor(totalViews * 0.4), // Simulated breakdown for now
+        },
+        {
+          platform: "Instagram",
+          color: "bg-pink-500",
+          lightColor: "bg-pink-500/10",
+          textColor: "text-pink-500",
+          sales: orders?.filter(o => o.source === 'Instagram' && o.status === 'Paid').reduce((acc, o) => acc + Number(o.total), 0) || 0,
+          orders: orders?.filter(o => o.source === 'Instagram').length || 0,
+          views: Math.floor(totalViews * 0.3),
+        },
+        {
+          platform: "TikTok",
+          color: "bg-sky-400",
+          lightColor: "bg-sky-400/10",
+          textColor: "text-sky-400",
+          sales: orders?.filter(o => o.source === 'TikTok' && o.status === 'Paid').reduce((acc, o) => acc + Number(o.total), 0) || 0,
+          orders: orders?.filter(o => o.source === 'TikTok').length || 0,
+          views: Math.floor(totalViews * 0.3),
+        },
+      ];
+
+      return {
+        store,
+        totalSales,
+        totalOrders,
+        totalViews,
+        platformBreakdown
+      };
+    }
+  });
 
   const copyLink = (id: string, url: string) => {
     navigator.clipboard.writeText(url);
@@ -58,12 +85,57 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!dashboardData?.store) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center gap-6">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+          <Store className="w-10 h-10 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-foreground">No store found</h2>
+          <p className="text-muted-foreground mt-1">You haven't set up your storefront yet.</p>
+        </div>
+        <Link 
+          href="/onboarding" 
+          className="px-8 py-4 rounded-2xl brand-gradient text-primary-foreground font-bold shadow-[0_0_20px_rgba(158,226,55,0.2)] hover:scale-105 transition-all"
+        >
+          Setup My Store 🚀
+        </Link>
+      </div>
+    );
+  }
+
+  const { 
+    store, 
+    totalSales = 0, 
+    totalOrders = 0, 
+    totalViews = 0, 
+    platformBreakdown = [] 
+  } = dashboardData;
+  const storeUrl = `https://gostore.ee/${store.slug}`;
+
+  const socialLinks = [
+    { id: "wa", label: "WhatsApp", icon: MessageCircle, color: "text-emerald-500", bg: "bg-emerald-500/10", borderActive: "border-emerald-500/30", url: `${storeUrl}?src=wa` },
+    { id: "ig", label: "Instagram", icon: Share2, color: "text-pink-500", bg: "bg-pink-500/10", borderActive: "border-pink-500/30", url: `${storeUrl}?src=ig` },
+    { id: "tt", label: "TikTok", icon: Share2, color: "text-sky-400", bg: "bg-sky-400/10", borderActive: "border-sky-400/30", url: `${storeUrl}?src=tt` },
+  ];
+
   return (
     <div className="flex flex-col gap-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black tracking-tight mb-2 italic">Overview</h1>
+          <h1 className="text-3xl font-black tracking-tight mb-2 italic">
+            {store?.name || "Overview"}
+          </h1>
           <p className="text-muted-foreground font-medium">Here&apos;s how your store is performing today.</p>
         </div>
         <Link
@@ -92,21 +164,21 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Today&apos;s Sales</p>
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Total Sales</p>
             <h3 className="text-3xl font-black mt-1 text-foreground">₦{totalSales.toLocaleString()}</h3>
           </div>
           {/* Platform breakdown bar */}
           <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
-            {platformData.map((p) => (
+            {platformBreakdown.map((p) => (
               <div
                 key={p.platform}
                 className={`${p.color} rounded-full`}
-                style={{ flex: p.sales }}
+                style={{ flex: Math.max(p.sales, 1) }}
               />
             ))}
           </div>
           <div className="flex items-center gap-4">
-            {platformData.map((p) => (
+            {platformBreakdown.map((p) => (
               <div key={p.platform} className="flex items-center gap-1.5">
                 <div className={`w-2 h-2 rounded-full ${p.color}`} />
                 <span className="text-[10px] font-bold text-muted-foreground">{p.platform}</span>
@@ -131,11 +203,11 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Today&apos;s Orders</p>
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Total Orders</p>
             <h3 className="text-3xl font-black mt-1 text-foreground">{totalOrders}</h3>
           </div>
           <div className="flex flex-col gap-2 mt-auto">
-            {platformData.map((p) => (
+            {platformBreakdown.map((p) => (
               <div key={p.platform} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${p.color}`} />
@@ -163,11 +235,11 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Today&apos;s Views</p>
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Total Views</p>
             <h3 className="text-3xl font-black mt-1 text-foreground">{totalViews.toLocaleString()}</h3>
           </div>
           <div className="flex flex-col gap-2 mt-auto">
-            {platformData.map((p) => (
+            {platformBreakdown.map((p) => (
               <div key={p.platform} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${p.color}`} />
@@ -213,7 +285,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-base lg:text-lg font-black text-foreground mb-4">Breakdown by Platform</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-          {platformData.map((p, i) => (
+          {platformBreakdown.map((p, i) => (
             <motion.div
               key={p.platform}
               initial={{ opacity: 0, y: 16 }}
@@ -245,7 +317,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Conversion</span>
                 <span className={`text-sm font-black ${p.textColor}`}>
-                  {((p.orders / p.views) * 100).toFixed(1)}%
+                  {p.views > 0 ? ((p.orders / p.views) * 100).toFixed(1) : 0}%
                 </span>
               </div>
             </motion.div>
