@@ -48,12 +48,11 @@ export async function GET(req: Request) {
         customer_phone: metadata.customer_phone,
         customer_address: metadata.customer_address,
         items: JSON.parse(metadata.items),
-        total_amount: metadata.total,
+        total: metadata.total,
         delivery_fee: metadata.delivery_fee,
-        payment_status: 'PAID',
+        status: 'Paid',
         payment_reference: reference,
-        payment_method: 'Paystack',
-        status: 'PENDING'
+        source: metadata.source || 'Direct'
       })
       .select()
       .single();
