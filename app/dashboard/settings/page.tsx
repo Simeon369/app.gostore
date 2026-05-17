@@ -42,6 +42,7 @@ export default function SettingsPage() {
   const [accountNumber, setAccountNumber] = useState(store?.account_number || "");
   const [accountName, setAccountName] = useState(store?.account_name || "");
   const [isValidating, setIsValidating] = useState(false);
+  const [isEditingBank, setIsEditingBank] = useState(false);
 
   // Fetch banks on mount
   useEffect(() => {
@@ -235,68 +236,99 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bank Name</label>
-                  <div className="relative">
-                    <select 
-                      value={selectedBank}
-                      onChange={(e) => setSelectedBank(e.target.value)}
-                      className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold appearance-none text-foreground text-sm lg:text-base pr-10"
-                    >
-                      <option value="">Select Bank</option>
-                      {banks.map(bank => (
-                        <option key={bank.code} value={bank.code}>{bank.name}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              {(!store?.account_number || isEditingBank) ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bank Name</label>
+                      <div className="relative">
+                        <select 
+                          value={selectedBank}
+                          onChange={(e) => setSelectedBank(e.target.value)}
+                          className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold appearance-none text-foreground text-sm lg:text-base pr-10"
+                        >
+                          <option value="">Select Bank</option>
+                          {banks.map((bank, index) => (
+                            <option key={`${bank.code}-${index}`} value={bank.code}>{bank.name}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Number</label>
+                      <input 
+                        type="text" 
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        maxLength={10}
+                        placeholder="0000000000"
+                        className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground text-sm lg:text-base"
+                      />
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Number</label>
-                  <input 
-                    type="text" 
-                    value={accountNumber}
-                    onChange={(e) => setAccountNumber(e.target.value)}
-                    maxLength={10}
-                    placeholder="0000000000"
-                    className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground text-sm lg:text-base"
-                  />
-                </div>
-              </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Name</label>
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    value={accountName}
-                    onChange={(e) => setAccountName(e.target.value)}
-                    placeholder={isValidating ? "Validating..." : "John Doe"}
-                    className={cn(
-                      "w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground text-sm lg:text-base",
-                      isValidating && "opacity-50"
-                    )}
-                  />
-                  {isValidating && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Name</label>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        placeholder={isValidating ? "Validating..." : "John Doe"}
+                        className={cn(
+                          "w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground text-sm lg:text-base",
+                          isValidating && "opacity-50"
+                        )}
+                      />
+                      {isValidating && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              <div className="mt-4">
-                <button 
-                  onClick={handleSavePayout}
-                  disabled={saving}
-                  className="w-full px-8 py-5 rounded-[24px] brand-gradient text-primary-foreground font-black flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(158,226,55,0.3)] text-xs lg:text-sm uppercase tracking-wider disabled:opacity-50"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Settlement Details"}
-                </button>
-              </div>
+                  <div className="mt-4 flex gap-4">
+                    {store?.account_number && (
+                      <button 
+                        onClick={() => setIsEditingBank(false)}
+                        type="button"
+                        className="px-8 py-5 rounded-[24px] bg-muted text-muted-foreground font-black hover:bg-white/5 transition-all text-xs lg:text-sm uppercase tracking-wider"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button 
+                      onClick={async () => {
+                        await handleSavePayout();
+                        setIsEditingBank(false);
+                      }}
+                      disabled={saving}
+                      className="flex-1 px-8 py-5 rounded-[24px] brand-gradient text-primary-foreground font-black flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(158,226,55,0.3)] text-xs lg:text-sm uppercase tracking-wider disabled:opacity-50"
+                    >
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Settlement Details"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="p-6 lg:p-8 rounded-[32px] border border-border bg-card/50 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Current Settlement Account</p>
+                    <h4 className="text-lg lg:text-xl font-bold text-foreground">{store.account_name}</h4>
+                    <p className="text-sm font-medium text-muted-foreground">{store.bank_name} • {store.account_number}</p>
+                  </div>
+                  <button 
+                    onClick={() => setIsEditingBank(true)}
+                    type="button"
+                    className="px-6 py-3 rounded-2xl bg-muted hover:bg-white/5 border border-border text-foreground text-xs lg:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap"
+                  >
+                    Edit Details
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
 
