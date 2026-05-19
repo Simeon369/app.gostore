@@ -74,7 +74,7 @@ export default function ProductDetailsPage() {
         .eq('store_id', store.id)
         .single();
 
-      if (productError || !product) return { store, product: null };
+      if (productError || !product || product.tag === 'Archived' || product.tag === 'Deleted') return { store, product: null };
 
       // 3. Increment visits (with dynamic source tracking)
       const viewSource = searchParams.get('source') || 'Direct';

@@ -86,6 +86,11 @@ CREATE POLICY "Users can update their own products" ON public.products
         store_id IN (SELECT id FROM public.stores WHERE user_id = auth.uid())
     );
 
+CREATE POLICY "Users can delete their own products" ON public.products
+    FOR DELETE USING (
+        store_id IN (SELECT id FROM public.stores WHERE user_id = auth.uid())
+    );
+
 -- Public viewing of products (for the storefront)
 CREATE POLICY "Public can view products of any store" ON public.products
     FOR SELECT USING (true);

@@ -55,24 +55,45 @@ export default function ProductsPage() {
     setDeletingId(productToDelete.id);
 
     try {
-      // 1. Delete image from storage if image_path exists
-      if (productToDelete.image_path) {
+      // 1. Resolve image path from URL if image_path is not defined
+      let storagePath = productToDelete.image_path;
+      if (!storagePath && productToDelete.image) {
+        const marker = '/product-images/';
+        const index = productToDelete.image.indexOf(marker);
+        if (index !== -1) {
+          storagePath = productToDelete.image.substring(index + marker.length);
+        }
+      }
+
+      // 2. Delete image from storage if path exists
+      if (storagePath) {
         const { error: storageError } = await supabase.storage
           .from('product-images')
-          .remove([productToDelete.image_path]);
+          .remove([storagePath]);
         
         if (storageError) console.error("Error deleting image:", storageError);
       }
 
-      // 2. Delete product from database
+      // 3. Try to delete product from database
       const { error: dbError } = await supabase
         .from('products')
         .delete()
         .eq('id', productToDelete.id);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.warn("Delete blocked by RLS/constraints, falling back to archiving:", dbError);
+        // Fallback: Archive product so it disappears from feed
+        const { error: archiveError } = await supabase
+          .from('products')
+          .update({ tag: 'Archived', stock: 0 })
+          .eq('id', productToDelete.id);
 
-      toast.success(`"${productToDelete.name}" deleted successfully`);
+        if (archiveError) throw archiveError;
+        toast.success(`"${productToDelete.name}" archived successfully`);
+      } else {
+        toast.success(`"${productToDelete.name}" deleted successfully`);
+      }
+
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete product");
@@ -116,6 +137,8 @@ export default function ProductsPage() {
   };
 
   const filteredProducts = products?.filter(p => 
+    p.tag !== 'Archived' &&
+    p.tag !== 'Deleted' &&
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 

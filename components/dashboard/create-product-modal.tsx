@@ -145,10 +145,21 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
       // 2. Upload new image if changed
       if (imageFile) {
         // Delete old image if editing and replacing
-        if (isEditing && editProduct?.image_path) {
-          await supabase.storage
-            .from('product-images')
-            .remove([editProduct.image_path]);
+        if (isEditing) {
+          let oldPath = editProduct?.image_path;
+          if (!oldPath && editProduct?.image) {
+            const marker = '/product-images/';
+            const idx = editProduct.image.indexOf(marker);
+            if (idx !== -1) {
+              oldPath = editProduct.image.substring(idx + marker.length);
+            }
+          }
+          
+          if (oldPath) {
+            await supabase.storage
+              .from('product-images')
+              .remove([oldPath]);
+          }
         }
 
         const fileExt = imageFile.name.split('.').pop();

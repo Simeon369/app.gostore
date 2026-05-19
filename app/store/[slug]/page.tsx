@@ -146,6 +146,8 @@ export default function StorefrontPage() {
   const filteredProducts = useMemo(() => {
     if (!storeData?.products) return [];
     return storeData.products.filter(p => {
+      if (p.tag === 'Archived' || p.tag === 'Deleted') return false;
+      
       const matchesCategory = selectedCategory === "All" || 
         p.category === selectedCategory || 
         (p.collections && p.collections.includes(selectedCategory));
