@@ -8,12 +8,15 @@ import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
+type TimeRange = 'today' | 'week' | 'month' | 'all';
+
 export default function DashboardPage() {
   const supabase = createClient();
   const [copied, setCopied] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>('today');
 
   const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', timeRange],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -28,15 +31,69 @@ export default function DashboardPage() {
       if (!store) return { store: null };
 
       // Fetch orders for this store
-      const { data: orders } = await supabase
+      const { data: allOrders } = await supabase
         .from('orders')
         .select('*')
         .eq('store_id', store.id);
 
+      const orders = allOrders?.filter(order => {
+        if (timeRange === 'all') return true;
+        
+        const date = new Date(order.created_at);
+        const now = new Date();
+        
+        if (timeRange === 'today') {
+          return date.toDateString() === now.toDateString();
+        }
+        
+        if (timeRange === 'week') {
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(now.getDate() - now.getDay());
+          startOfWeek.setHours(0,0,0,0);
+          return date >= startOfWeek;
+        }
+        
+        if (timeRange === 'month') {
+          return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        }
+        
+        return true;
+      }) || [];
+
+      // Fetch store views for this store
+      const { data: allViews } = await supabase
+        .from('store_views')
+        .select('created_at, source')
+        .eq('store_id', store.id);
+
+      const filteredViews = allViews?.filter(v => {
+        if (timeRange === 'all') return true;
+        
+        const date = new Date(v.created_at);
+        const now = new Date();
+        
+        if (timeRange === 'today') {
+          return date.toDateString() === now.toDateString();
+        }
+        
+        if (timeRange === 'week') {
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(now.getDate() - now.getDay());
+          startOfWeek.setHours(0,0,0,0);
+          return date >= startOfWeek;
+        }
+        
+        if (timeRange === 'month') {
+          return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        }
+        
+        return true;
+      }) || [];
+
       // Calculate stats
       const totalSales = orders?.reduce((acc, order) => acc + (order.status === 'Paid' ? Number(order.total) : 0), 0) || 0;
       const totalOrders = orders?.length || 0;
-      const totalViews = store.visits || 0;
+      const totalViews = timeRange === 'all' ? (store.visits || 0) : filteredViews.length;
 
       // Group orders by source
       const channels = store.channels || { whatsapp: true, instagram: false, tiktok: false };
@@ -83,10 +140,24 @@ export default function DashboardPage() {
         orders: orders?.filter(o => !o.source || o.source === 'Direct' || o.source === 'direct').length || 0,
       });
 
-      const platformBreakdown = activePlatforms.map(p => ({
-        ...p,
-        views: totalViews > 0 ? Math.floor(totalViews / activePlatforms.length) : 0
-      }));
+      const platformBreakdown = activePlatforms.map(p => {
+        let viewCount = 0;
+        if (p.platform === "Direct") {
+          viewCount = filteredViews.filter(v => !v.source || v.source === 'Direct' || v.source === 'direct').length;
+        } else {
+          viewCount = filteredViews.filter(v => v.source?.toLowerCase() === p.platform.toLowerCase()).length;
+        }
+
+        // Fallback for legacy views (where store.visits is populated but store_views table is empty)
+        if (timeRange === 'all' && filteredViews.length === 0 && totalViews > 0) {
+          viewCount = Math.floor(totalViews / activePlatforms.length);
+        }
+
+        return {
+          ...p,
+          views: viewCount
+        };
+      });
 
       return {
         store,
@@ -139,7 +210,7 @@ export default function DashboardPage() {
     totalViews = 0, 
     platformBreakdown = [] 
   } = dashboardData;
-  const storeUrl = `https://gostore.ee/${store.slug}`;
+  const storeUrl = `https://app-gostore.vercel.app/store/${store.slug}`;
 
   const socialLinks = [];
   if (store.channels?.whatsapp) {
@@ -162,19 +233,40 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-black tracking-tight mb-2 italic">
             {store?.name || "Overview"}
           </h1>
-          <p className="text-muted-foreground font-medium">Here&apos;s how your store is performing today.</p>
+          <p className="text-muted-foreground font-medium">Here&apos;s how your store is performing.</p>
         </div>
-        <Link
-          href="/dashboard/products"
-          className="px-5 py-3 rounded-2xl brand-gradient text-primary-foreground text-sm font-bold shadow-[0_0_20px_rgba(158,226,55,0.2)] hover:shadow-[0_0_30px_rgba(158,226,55,0.4)] transition-all flex items-center gap-2 w-fit"
-        >
-          <Plus className="w-4 h-4" /> Add Product
-        </Link>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {/* Time Range Toggle */}
+          <div className="flex items-center p-1 bg-muted rounded-2xl border border-border">
+            {(['today', 'week', 'month', 'all'] as TimeRange[]).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-xs font-bold transition-all capitalize",
+                  timeRange === range 
+                    ? "bg-card text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+
+          <Link
+            href="/dashboard/products"
+            className="px-5 py-3 rounded-2xl brand-gradient text-primary-foreground text-sm font-bold shadow-[0_0_20px_rgba(158,226,55,0.2)] hover:shadow-[0_0_30px_rgba(158,226,55,0.4)] transition-all flex items-center gap-2 w-fit"
+          >
+            <Plus className="w-4 h-4" /> Add Product
+          </Link>
+        </div>
       </div>
 
-      {/* Today's 3 KPIs */}
+      {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-        {/* Today's Sales */}
+        {/* Sales */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -182,11 +274,8 @@ export default function DashboardPage() {
           className="glass-card rounded-[32px] p-4 lg:p-8 flex flex-col gap-4"
         >
           <div className="flex items-center justify-between">
-            <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+            <div className="p-3 rounded-2xl bg-primary/10 text-primary w-fit">
               <TrendingUp className="w-6 h-6" />
-            </div>
-            <div className="flex items-center gap-1 text-emerald-500 text-xs font-black">
-              <ArrowUpRight className="w-3.5 h-3.5" /> +18%
             </div>
           </div>
           <div>
@@ -213,7 +302,7 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Today's Orders */}
+        {/* Orders */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -221,11 +310,8 @@ export default function DashboardPage() {
           className="glass-card rounded-[32px] p-4 lg:p-8 flex flex-col gap-4"
         >
           <div className="flex items-center justify-between">
-            <div className="p-3 rounded-2xl bg-muted text-muted-foreground">
+            <div className="p-3 rounded-2xl bg-muted text-muted-foreground w-fit">
               <ShoppingBag className="w-6 h-6" />
-            </div>
-            <div className="flex items-center gap-1 text-emerald-500 text-xs font-black">
-              <ArrowUpRight className="w-3.5 h-3.5" /> +3 today
             </div>
           </div>
           <div>
@@ -245,7 +331,7 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Today's Views */}
+        {/* Views */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -253,11 +339,8 @@ export default function DashboardPage() {
           className="glass-card rounded-[32px] p-4 lg:p-8 flex flex-col gap-4"
         >
           <div className="flex items-center justify-between">
-            <div className="p-3 rounded-2xl bg-muted text-muted-foreground">
+            <div className="p-3 rounded-2xl bg-muted text-muted-foreground w-fit">
               <Eye className="w-6 h-6" />
-            </div>
-            <div className="flex items-center gap-1 text-orange-400 text-xs font-black">
-              <ArrowDownRight className="w-3.5 h-3.5" /> -5% vs yesterday
             </div>
           </div>
           <div>

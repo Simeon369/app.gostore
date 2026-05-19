@@ -22,6 +22,9 @@ export async function validatePaystackAccount(accountNumber: string, bankCode: s
   );
   const data = await response.json();
   if (!data.status) {
+    if (PAYSTACK_SECRET_KEY?.startsWith('sk_test_') && (data.message?.toLowerCase().includes('limit') || data.message?.toLowerCase().includes('test bank'))) {
+      return { account_number: accountNumber, account_name: "Test Settlement Account" };
+    }
     throw new Error(data.message || "Could not resolve account");
   }
   return data.data; // { account_number, account_name }

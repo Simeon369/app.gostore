@@ -103,7 +103,7 @@ export default function ProductsPage() {
       toast.error("Store slug not found");
       return;
     }
-    const baseUrl = `https://gostore.ee/${store.slug}`;
+    const baseUrl = `https://app-gostore.vercel.app/store/${store.slug}`;
     const url = source ? `${baseUrl}?source=${source}` : baseUrl;
     navigator.clipboard.writeText(url);
     toast.success(`${source || 'Direct'} link copied!`);
@@ -198,7 +198,17 @@ export default function ProductsPage() {
                       </div>
                       <div>
                         <p className="font-bold text-sm text-foreground">{product.name}</p>
-                        <p className="text-[11px] text-muted-foreground font-medium">{product.category}</p>
+                        {product.collections && product.collections.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {product.collections.map((c: string) => (
+                              <span key={c} className="px-1.5 py-0.5 rounded bg-white/5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider border border-white/5">
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground font-medium">{product.category}</p>
+                        )}
                       </div>
                     </div>
                   </td>

@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.stores (
     delivery_zones JSONB DEFAULT '[]'::jsonb,
     delivery_payment_option TEXT DEFAULT 'checkout',
     visits INTEGER DEFAULT 0,
+    collections JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.products (
     stock INTEGER DEFAULT 0,
     is_preorder BOOLEAN DEFAULT false,
     tag TEXT,
+    collections JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -101,12 +103,32 @@ CREATE POLICY "Users can view orders for their own store" ON public.orders
 CREATE POLICY "Anyone can create an order" ON public.orders
     FOR INSERT WITH CHECK (true);
 
+-- STORE VIEWS TABLE
+CREATE TABLE IF NOT EXISTS public.store_views (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE NOT NULL,
+    source TEXT DEFAULT 'Direct',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.store_views ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view views for their own store" ON public.store_views
+    FOR SELECT USING (
+        store_id IN (SELECT id FROM public.stores WHERE user_id = auth.uid())
+    );
+
+CREATE POLICY "Anyone can insert store views" ON public.store_views
+    FOR INSERT WITH CHECK (true);
+
 -- RPC FUNCTIONS
-CREATE OR REPLACE FUNCTION increment_store_visits(store_id UUID)
+CREATE OR REPLACE FUNCTION increment_store_visits(store_id UUID, view_source TEXT DEFAULT 'Direct')
 RETURNS VOID AS $$
 BEGIN
     UPDATE public.stores
     SET visits = visits + 1
-    WHERE id = store_id;
+    WHERE id = increment_store_visits.store_id;
+
+    INSERT INTO public.store_views (store_id, source) VALUES (increment_store_visits.store_id, increment_store_visits.view_source);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

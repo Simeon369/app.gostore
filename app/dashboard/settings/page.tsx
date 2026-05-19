@@ -274,18 +274,13 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Subdomain (Read-Only)</label>
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      value={storeSlug}
-                      readOnly
-                      placeholder="subdomain"
-                      className="w-full px-5 py-4 rounded-2xl bg-muted border border-border outline-none opacity-70 font-bold pr-24 lg:pr-32 text-foreground text-sm lg:text-base cursor-not-allowed"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[10px] lg:text-xs font-bold pointer-events-none opacity-50">
-                      .gostore.ee
-                    </div>
-                  </div>
+                  <input 
+                    type="text" 
+                    value={storeSlug}
+                    readOnly
+                    placeholder="subdomain"
+                    className="w-full px-5 py-4 rounded-2xl bg-muted border border-border outline-none opacity-70 font-bold text-foreground text-sm lg:text-base cursor-not-allowed"
+                  />
                 </div>
               </div>
 

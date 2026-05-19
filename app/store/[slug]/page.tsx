@@ -58,7 +58,8 @@ export default function StorefrontPage() {
         .eq('store_id', store.id);
 
       // 3. Increment visits (Fire and forget)
-      supabase.rpc('increment_store_visits', { store_id: store.id }).then();
+      const viewSource = searchParams.get('source') || 'Direct';
+      supabase.rpc('increment_store_visits', { store_id: store.id, view_source: viewSource }).then();
 
       return { store, products: products || [] };
     }
@@ -115,15 +116,31 @@ export default function StorefrontPage() {
   const [checkoutProduct, setCheckoutProduct] = useState<any>(null);
 
   const categories = useMemo(() => {
-    if (!storeData?.products) return ["All"];
-    const cats = ["All", ...new Set(storeData.products.map(p => p.category).filter(Boolean))];
-    return cats;
-  }, [storeData?.products]);
+    if (!storeData?.store) return ["All"];
+    const cats = new Set<string>();
+    
+    if (storeData.store.collections) {
+      storeData.store.collections.forEach((c: string) => cats.add(c));
+    }
+    
+    if (storeData.products) {
+      storeData.products.forEach(p => {
+        // Ignore the old hardcoded "Fashion" category
+        if (p.category && p.category !== "Fashion") cats.add(p.category);
+        if (p.collections) p.collections.forEach((c: string) => cats.add(c));
+      });
+    }
+    
+    return ["All", ...Array.from(cats)];
+  }, [storeData]);
 
   const filteredProducts = useMemo(() => {
     if (!storeData?.products) return [];
     return storeData.products.filter(p => {
-      const matchesCategory = selectedCategory === "All" || p.category === selectedCategory;
+      const matchesCategory = selectedCategory === "All" || 
+        p.category === selectedCategory || 
+        (p.collections && p.collections.includes(selectedCategory));
+        
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
@@ -161,7 +178,7 @@ export default function StorefrontPage() {
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
-            className="fixed top-20 left-4 right-4 z-50 flex justify-center pointer-events-none"
+            className="fixed top-6 left-4 right-4 z-50 flex justify-center pointer-events-none"
           >
             <div className="bg-emerald-500 text-white px-6 py-4 rounded-[24px] shadow-2xl flex items-center gap-3 border border-emerald-400/20 pointer-events-auto">
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -176,59 +193,85 @@ export default function StorefrontPage() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Top Bar */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-white/5 p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl glass-card flex items-center justify-center overflow-hidden border-white/10">
-            {store.logo ? (
-              <Image src={store.logo} alt={store.name} width={40} height={40} className="w-full h-full object-cover" />
-            ) : (
-              <Store className="w-5 h-5 text-zinc-500" />
+      {/* Dynamic Warm Banner */}
+      <div className="h-32 md:h-48 w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 relative overflow-hidden border-b border-white/5">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,158,11,0.06),transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
+      </div>
+
+      {/* Brand Header */}
+      <header className="px-6 md:px-10 -mt-10 md:-mt-16 max-w-5xl mx-auto w-full relative z-10 flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="flex items-end gap-4">
+            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-background p-1.5 shadow-xl border border-white/10 overflow-hidden flex items-center justify-center">
+              {store.logo ? (
+                <Image src={store.logo} alt={store.name} width={112} height={112} className="w-full h-full object-cover rounded-full" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center">
+                  <Store className="w-8 h-8 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            <div className="mb-2">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl md:text-3xl font-black text-foreground">{store.name}</h1>
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Active
+                </span>
+              </div>
+              <p className="text-[10px] md:text-xs text-primary font-bold uppercase tracking-widest mt-1">Official Storefront</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 mb-2">
+            {store.whatsapp && (
+              <a href={`https://wa.me/${store.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all shadow-md">
+                <MessageCircle className="w-4 h-4" />
+                Chat on WhatsApp
+              </a>
+            )}
+            {store.socials?.instagram && (
+              <a href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-zinc-400 transition-all">
+                <Instagram className="w-4 h-4" />
+              </a>
+            )}
+            {store.socials?.tiktok && (
+              <a href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-zinc-400 transition-all">
+                <TikTok className="w-4 h-4" />
+              </a>
             )}
           </div>
-          <div>
-            <h1 className="font-bold text-sm leading-tight">{store.name}</h1>
-            <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Official Store</p>
-          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {store.whatsapp && (
-            <a href={`https://wa.me/${store.whatsapp}`} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-white/5 rounded-xl transition-all">
-              <MessageCircle className="w-5 h-5 text-zinc-400" />
-            </a>
-          )}
-          {store.socials?.instagram && (
-            <a href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-white/5 rounded-xl transition-all">
-              <Instagram className="w-5 h-5 text-zinc-400" />
-            </a>
-          )}
-          {store.socials?.tiktok && (
-            <a href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-white/5 rounded-xl transition-all">
-              <TikTok className="w-5 h-5 text-zinc-400" />
-            </a>
-          )}
-          <button className="p-2 hover:bg-white/5 rounded-xl transition-all">
-            <Search className="w-5 h-5 text-zinc-400" />
-          </button>
+
+        {store.description && (
+          <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-2xl mt-2">
+            {store.description}
+          </p>
+        )}
+
+        {/* High-Trust Strip */}
+        <div className="flex flex-wrap gap-4 items-center text-zinc-500 text-[10px] md:text-xs font-bold uppercase tracking-widest border-t border-b border-white/5 py-4 mt-2">
+          <span className="flex items-center gap-1.5">⚡ Instant Checkout</span>
+          <span className="w-1 h-1 rounded-full bg-white/10" />
+          <span className="flex items-center gap-1.5">🛡️ Secured Payments</span>
+          <span className="w-1 h-1 rounded-full bg-white/10" />
+          <span className="flex items-center gap-1.5">📦 Direct Delivery</span>
         </div>
       </header>
 
-      {/* Hero / Description */}
-      <section className="p-6 md:p-10 flex flex-col gap-4 max-w-5xl mx-auto w-full">
-        <p className="text-zinc-400 text-sm md:text-base leading-relaxed">
-          {store.description || `Welcome to ${store.name}. Shop our premium collection.`}
-        </p>
-        
-        {/* Categories Scroller */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide no-scrollbar">
+      {/* Categories & Search */}
+      <section className="px-6 md:px-10 py-6 max-w-5xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Categories pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide no-scrollbar flex-1">
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                "px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
+                "px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap transition-all border uppercase tracking-wider",
                 selectedCategory === cat 
-                  ? "bg-primary border-primary text-black" 
+                  ? "bg-primary border-primary text-black shadow-lg" 
                   : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/20"
               )}
             >
@@ -236,36 +279,47 @@ export default function StorefrontPage() {
             </button>
           ))}
         </div>
+
+        {/* Search Input */}
+        <div className="relative w-full sm:w-72">
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search products..."
+            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 text-foreground text-xs font-bold outline-none transition-all"
+          />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+        </div>
       </section>
 
       {/* Product Grid */}
-      <main className="flex-1 p-6 md:p-10 max-w-5xl mx-auto w-full">
+      <main className="flex-1 px-6 md:px-10 max-w-5xl mx-auto w-full">
         {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
             {filteredProducts.map((product, i) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex flex-col gap-3 group"
+                className="flex flex-col rounded-[24px] border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all overflow-hidden shadow-lg group relative"
               >
-                <div 
-                  onClick={() => setCheckoutProduct(product)}
-                  className="relative aspect-square rounded-[24px] overflow-hidden glass-card cursor-pointer group-hover:border-primary/50 transition-all shadow-xl"
-                >
+                {/* Image Area */}
+                <div className="relative aspect-square overflow-hidden bg-white/5">
                   {product.image ? (
                     <Image 
                       src={product.image} 
                       alt={product.name} 
                       fill 
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                      <ShoppingBag className="w-10 h-10 text-muted-foreground" />
+                      <ShoppingBag className="w-10 h-10 text-muted-foreground opacity-30" />
                     </div>
                   )}
+                  
                   {product.tag && (
                     <div className={cn(
                       "absolute top-3 left-3 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest z-10 shadow-lg",
@@ -276,25 +330,42 @@ export default function StorefrontPage() {
                       {product.tag}
                     </div>
                   )}
-                  {/* Quick Add Overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="bg-white text-black px-4 py-2 rounded-full font-bold text-xs">Buy Now</span>
-                  </div>
                 </div>
                 
-                <div className="flex flex-col gap-1 px-1">
-                  <h3 className="font-bold text-sm md:text-base line-clamp-1">{product.name}</h3>
-                  <div className="flex items-center justify-between">
-                    <p className="text-primary font-black text-sm">₦{Number(product.price).toLocaleString()}</p>
+                {/* Product Info */}
+                <div className="flex flex-col gap-3 p-4 flex-1 justify-between">
+                  <div>
+                    <h3 className="font-bold text-sm md:text-base line-clamp-2 text-zinc-100 min-h-[40px]">{product.name}</h3>
+                    <p className="text-primary font-black text-base mt-1">₦{Number(product.price).toLocaleString()}</p>
+                  </div>
+                  
+                  {/* Action Buttons (Encourages Buying!) */}
+                  <div className="flex gap-2 mt-1">
                     <button 
-                      onClick={() => {
-                        const text = `Hi! I'm interested in the ${product.name} (₦${Number(product.price).toLocaleString()}) from your GoStore. ${window.location.href}`;
-                        window.open(`https://wa.me/${store.whatsapp}?text=${encodeURIComponent(text)}`);
-                      }}
-                      className="p-1.5 hover:bg-white/5 rounded-lg transition-all"
+                      onClick={() => setCheckoutProduct(product)}
+                      disabled={product.tag === "Sold Out"}
+                      className={cn(
+                        "flex-1 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-wider text-center transition-all shadow-md",
+                        product.tag === "Sold Out"
+                          ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700/50"
+                          : "bg-primary hover:bg-primary/95 text-black"
+                      )}
                     >
-                      <MessageCircle className="w-4 h-4 text-zinc-500" />
+                      {product.tag === "Sold Out" ? "Sold Out" : "Buy Now"}
                     </button>
+                    
+                    {store.whatsapp && (
+                      <button 
+                        onClick={() => {
+                          const text = `Hi! I'm interested in the ${product.name} (₦${Number(product.price).toLocaleString()}) from your store: ${window.location.href}`;
+                          window.open(`https://wa.me/${store.whatsapp}?text=${encodeURIComponent(text)}`);
+                        }}
+                        className="px-3 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-zinc-400 transition-all flex items-center justify-center"
+                        title="Inquire on WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4 text-emerald-400" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -308,7 +379,7 @@ export default function StorefrontPage() {
         )}
       </main>
 
-      {/* Floating Checkout Button (If multiple items were supported) */}
+      {/* Floating Checkout Button */}
       <AnimatePresence>
         {checkoutProduct && (
           <CheckoutModal 

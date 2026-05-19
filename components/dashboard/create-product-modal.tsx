@@ -28,7 +28,10 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [stock, setStock] = useState("");
-  const [category, setCategory] = useState("Fashion");
+  const [category, setCategory] = useState("");
+  const [collections, setCollections] = useState<string[]>([]);
+  const [storeCollections, setStoreCollections] = useState<string[]>([]);
+  const [newCollectionInput, setNewCollectionInput] = useState("");
   const [tag, setTag] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -40,13 +43,30 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
       setPrice(String(editProduct.price || ""));
       setDescription(editProduct.description || "");
       setStock(String(editProduct.stock || ""));
-      setCategory(editProduct.category || "Fashion");
+      setCategory(editProduct.category || "");
+      setCollections(editProduct.collections || []);
       setTag(editProduct.tag || "");
       setIsPreorder(editProduct.is_preorder || false);
       setImagePreview(editProduct.image || null);
       setImageFile(null);
     }
   }, [editProduct, isOpen]);
+
+  // Fetch store collections
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCollections = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: store } = await supabase.from('stores').select('collections').eq('user_id', user.id).single();
+          if (store && store.collections) {
+            setStoreCollections(store.collections);
+          }
+        }
+      };
+      fetchCollections();
+    }
+  }, [isOpen, supabase]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -68,8 +88,19 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
     setIsPreorder(false);
     setImageFile(null);
     setImagePreview(null);
-    setCategory("Fashion");
+    setCategory("");
+    setCollections([]);
+    setNewCollectionInput("");
     setTag("");
+  };
+
+  const handleAddCollection = (e?: React.KeyboardEvent | React.MouseEvent) => {
+    if (e && 'preventDefault' in e) e.preventDefault();
+    const val = newCollectionInput.trim();
+    if (val && !collections.includes(val)) {
+      setCollections([...collections, val]);
+    }
+    setNewCollectionInput("");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,7 +133,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
       // 1. Get user's store
       const { data: store } = await supabase
         .from('stores')
-        .select('id')
+        .select('id, collections')
         .eq('user_id', user.id)
         .single();
 
@@ -138,6 +169,14 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
         imagePath = filePath;
       }
 
+      // 3. Update store collections if there are new ones
+      const currentStoreCollections = store.collections || [];
+      const newForStore = collections.filter(c => !currentStoreCollections.includes(c));
+      if (newForStore.length > 0) {
+        const updatedStoreCollections = [...currentStoreCollections, ...newForStore];
+        await supabase.from('stores').update({ collections: updatedStoreCollections }).eq('id', store.id);
+      }
+
       const productData = {
         name,
         price: Number(price),
@@ -145,6 +184,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
         stock: isPreorder ? 0 : Number(stock),
         is_preorder: isPreorder,
         category,
+        collections,
         tag: isPreorder ? "Pre-order" : (tag || null),
         image: imageUrl,
         image_path: imagePath
@@ -289,6 +329,68 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                     placeholder="Describe your product..."
                     className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all text-sm resize-none text-foreground placeholder:text-muted-foreground/50"
                   />
+                </div>
+
+                {/* Collections Section */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Collections</label>
+                  
+                  {/* Selected Collections */}
+                  {collections.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-1">
+                      {collections.map(c => (
+                        <span key={c} className="px-3 py-1.5 bg-primary/10 text-primary font-bold text-xs rounded-full flex items-center gap-1">
+                          {c}
+                          <button type="button" onClick={() => setCollections(collections.filter(x => x !== c))} className="hover:text-primary/70">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Input for new collection */}
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={newCollectionInput}
+                      onChange={(e) => setNewCollectionInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          handleAddCollection();
+                        }
+                      }}
+                      placeholder="e.g. Summer Sale, New Arrivals"
+                      className="flex-1 px-5 py-3 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-sm text-foreground placeholder:text-muted-foreground/50"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={handleAddCollection}
+                      className="px-5 rounded-2xl bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all text-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Suggestions */}
+                  {storeCollections.filter(c => !collections.includes(c)).length > 0 && (
+                    <div className="mt-2 p-4 rounded-2xl border border-border bg-card">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Suggestions</p>
+                      <div className="flex flex-wrap gap-2">
+                        {storeCollections.filter(c => !collections.includes(c)).map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setCollections([...collections, c])}
+                            className="px-3 py-1.5 bg-muted border border-border text-muted-foreground hover:border-primary/50 hover:text-primary transition-all font-bold text-xs rounded-full"
+                          >
+                            + {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Pre-order Toggle */}
