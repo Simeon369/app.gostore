@@ -16,8 +16,29 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "GoStore | Manage Your Stores",
-  description: "The premium platform for managing your storefronts.",
+  title: "GoStore | Create Your WhatsApp Storefront in 5 Minutes",
+  description: "Build a high-converting, professional online storefront for your business. Accept payments with Paystack, configure split payouts, and chat directly on WhatsApp.",
+  openGraph: {
+    title: "GoStore | Create Your WhatsApp Storefront in 5 Minutes",
+    description: "Build a high-converting, professional online storefront for your business. Accept payments with Paystack, configure split payouts, and chat directly on WhatsApp.",
+    url: "https://app-gostore.vercel.app",
+    siteName: "GoStore",
+    images: [
+      {
+        url: "https://app-gostore.vercel.app/gostore-logo.png",
+        width: 800,
+        height: 800,
+        alt: "GoStore Logo",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GoStore | Create Your WhatsApp Storefront in 5 Minutes",
+    description: "Build a high-converting, professional online storefront for your business. Accept payments with Paystack, configure split payouts, and chat directly on WhatsApp.",
+    images: ["https://app-gostore.vercel.app/gostore-logo.png"],
+  },
 };
 
 import { Toaster } from "sonner";

@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [storeName, setStoreName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -19,43 +19,33 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          store_name: storeName,
-        }
-      }
     });
 
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      // In a real app, we'd also create a record in a 'stores' table
-      // Redirect to the onboarding wizard
       router.push("/onboarding");
       router.refresh();
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-background relative overflow-hidden">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-background relative overflow-y-auto py-12">
       {/* Background Blobs */}
       <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] -z-10" />
-
-      {/* <Link 
-        href="/" 
-        className="absolute top-8 left-8 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Back to Home
-      </Link> */}
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -63,13 +53,6 @@ export default function SignupPage() {
         className="w-full max-w-md flex flex-col gap-8"
       >
         <div className="flex flex-col items-center gap-2 text-center">
-          {/* <Image
-            src="/gostore-logo.png"
-            alt="GoStore Logo"
-            width={48}
-            height={48}
-            className="w-12 h-12 mb-2"
-          /> */}
           <h1 className="text-3xl font-bold tracking-tight">Create Your Store</h1>
           <p className="text-zinc-400">Join thousands of creators on GoStore</p>
         </div>
@@ -77,19 +60,6 @@ export default function SignupPage() {
         <div className="glass-card p-8 rounded-[32px] flex flex-col gap-6 shadow-2xl">
           <form onSubmit={handleSignup} className="flex flex-col gap-6">
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-zinc-400 ml-1 flex items-center gap-2">
-                  <Store className="w-3 h-3" /> Store Name
-                </label>
-                <input 
-                  type="text" 
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  placeholder="My Awesome Shop"
-                  required
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-zinc-600"
-                />
-              </div>
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold text-zinc-400 ml-1">Email Address</label>
                 <input 
@@ -107,6 +77,17 @@ export default function SignupPage() {
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-zinc-600"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-zinc-400 ml-1">Confirm Password</label>
+                <input 
+                  type="password" 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-zinc-600"
