@@ -203,7 +203,7 @@ export default function StorefrontPage() {
       </AnimatePresence>
 
       {/* Dynamic Warm Banner */}
-      <div className="h-32 md:h-48 w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 relative overflow-hidden border-b border-border">
+      <div className="h-32 md:h-48 w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 relative overflow-hidden  border-border">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,158,11,0.06),transparent_50%)]" />
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
         
@@ -266,11 +266,11 @@ export default function StorefrontPage() {
 
         {/* High-Trust Strip */}
         <div className="flex flex-wrap gap-4 items-center text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest border-t border-b border-border py-4 mt-2">
-          <span className="flex items-center gap-1.5">⚡ Instant Checkout</span>
+          <span className="flex items-center text-[10px] gap-1.5">⚡ Instant Checkout</span>
           <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-          <span className="flex items-center gap-1.5">🛡️ Secured Payments</span>
+          <span className="flex items-center text-[10px] gap-1.5">🛡️ Secured Payments</span>
           <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-          <span className="flex items-center gap-1.5">📦 Direct Delivery</span>
+          <span className="flex items-center text-[10px] gap-1.5">📦 Direct Delivery</span>
         </div>
       </header>
 
@@ -385,8 +385,66 @@ export default function StorefrontPage() {
         )}
       </AnimatePresence>
 
+      {/* Store Contacts Section */}
+      <section className="max-w-5xl mx-auto w-full px-6 py-8 border-t border-border mt-12">
+        <div className="flex flex-col items-center md:flex-row md:justify-between gap-6 text-center md:text-left">
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Store Contact & Socials</h3>
+            <p className="text-[11px] text-muted-foreground/80 mt-1">Have any questions about products or your order? Reach out directly!</p>
+          </div>
+          
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {store.whatsapp && (
+              <a 
+                href={`https://wa.me/${formatWhatsAppNumber(store.whatsapp)}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400 text-xs font-bold transition-all shadow-sm"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>+{formatWhatsAppNumber(store.whatsapp)}</span>
+              </a>
+            )}
+            
+            {store.socials?.email && (
+              <a 
+                href={`mailto:${store.socials.email}`}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-xs font-bold transition-all shadow-sm"
+              >
+                <Store className="w-4 h-4" />
+                <span>{store.socials.email}</span>
+              </a>
+            )}
+
+            {store.socials?.instagram && (
+              <a 
+                href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground text-xs font-bold transition-all"
+              >
+                <Instagram className="w-4 h-4" />
+                <span>@{store.socials.instagram.replace('@', '')}</span>
+              </a>
+            )}
+
+            {store.socials?.tiktok && (
+              <a 
+                href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground text-xs font-bold transition-all"
+              >
+                <TikTok className="w-4 h-4" />
+                <span>@{store.socials.tiktok.replace('@', '')}</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Footer Branding */}
-      <footer className="mt-auto py-10 flex flex-col items-center gap-4 text-center border-t border-white/5">
+      <footer className="mt-auto py-10 flex flex-col items-center gap-4 text-center border-t border-border">
         <div className="flex items-center gap-2">
           <Image src="/gostore-logo.png" alt="GoStore" width={20} height={20} className="w-5 h-5 opacity-50" />
           <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Powered by GoStore</p>

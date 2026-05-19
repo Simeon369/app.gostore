@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { CheckoutModal } from "@/components/store/checkout-modal";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
+import { Instagram, TikTok } from "@/components/icons";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -327,6 +328,75 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       </main>
+
+      {/* Store Contacts Section */}
+      <section className="max-w-5xl mx-auto w-full px-6 py-8 border-t border-border mt-12">
+        <div className="flex flex-col items-center md:flex-row md:justify-between gap-6 text-center md:text-left">
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Store Contact & Socials</h3>
+            <p className="text-[11px] text-muted-foreground/80 mt-1">Have any questions about products or your order? Reach out directly!</p>
+          </div>
+          
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {store.whatsapp && (
+              <a 
+                href={`https://wa.me/${formatWhatsAppNumber(store.whatsapp)}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400 text-xs font-bold transition-all shadow-sm"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>+{formatWhatsAppNumber(store.whatsapp)}</span>
+              </a>
+            )}
+            
+            {store.socials?.email && (
+              <a 
+                href={`mailto:${store.socials.email}`}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-xs font-bold transition-all shadow-sm"
+              >
+                <Store className="w-4 h-4" />
+                <span>{store.socials.email}</span>
+              </a>
+            )}
+
+            {store.socials?.instagram && (
+              <a 
+                href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground text-xs font-bold transition-all"
+              >
+                <Instagram className="w-4 h-4" />
+                <span>@{store.socials.instagram.replace('@', '')}</span>
+              </a>
+            )}
+
+            {store.socials?.tiktok && (
+              <a 
+                href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground text-xs font-bold transition-all"
+              >
+                <TikTok className="w-4 h-4" />
+                <span>@{store.socials.tiktok.replace('@', '')}</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer Branding */}
+      <footer className="mt-auto py-10 flex flex-col items-center gap-4 text-center border-t border-border">
+        <div className="flex items-center gap-2">
+          <Image src="/gostore-logo.png" alt="GoStore" width={20} height={20} className="w-5 h-5 opacity-50" />
+          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Powered by GoStore</p>
+        </div>
+        <Link href="/" className="text-xs font-bold text-primary hover:underline">
+          Create your own store in 5 minutes
+        </Link>
+      </footer>
 
       {/* Checkout Modal */}
       {checkoutProduct && (
