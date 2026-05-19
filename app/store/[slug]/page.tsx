@@ -29,6 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const logoUrl = store.logo || "https://app-gostore.vercel.app/gostore-logo.png";
 
   return {
+    metadataBase: new URL("https://app-gostore.vercel.app"),
     title,
     description,
     openGraph: {

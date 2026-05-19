@@ -16,6 +16,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://app-gostore.vercel.app"),
   title: "GoStore | Create Your WhatsApp Storefront in 5 Minutes",
   description: "Build a high-converting, professional online storefront for your business. Accept payments with Paystack, configure split payouts, and chat directly on WhatsApp.",
   openGraph: {
