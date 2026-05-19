@@ -13,7 +13,7 @@ import {
   Loader2,
   CheckCircle2
 } from "lucide-react";
-import { Instagram } from "../../../components/icons";
+import { Instagram, TikTok } from "../../../components/icons";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -192,9 +192,19 @@ export default function StorefrontPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {store.whatsapp && (
+            <a href={`https://wa.me/${store.whatsapp}`} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-white/5 rounded-xl transition-all">
+              <MessageCircle className="w-5 h-5 text-zinc-400" />
+            </a>
+          )}
           {store.socials?.instagram && (
-            <a href={`https://instagram.com/${store.socials.instagram}`} className="p-2 hover:bg-white/5 rounded-xl transition-all">
+            <a href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-white/5 rounded-xl transition-all">
               <Instagram className="w-5 h-5 text-zinc-400" />
+            </a>
+          )}
+          {store.socials?.tiktok && (
+            <a href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-white/5 rounded-xl transition-all">
+              <TikTok className="w-5 h-5 text-zinc-400" />
             </a>
           )}
           <button className="p-2 hover:bg-white/5 rounded-xl transition-all">

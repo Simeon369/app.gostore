@@ -25,8 +25,12 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
 
+  const zones = store.delivery_zones || store.deliveryZones || [];
+  const isPayOnArrival = store.delivery_payment_option === "arrival";
+
   const deliveryFee = selectedZone ? Number(selectedZone.price) : 0;
   const total = Number(product.price) + deliveryFee;
+  const checkoutTotal = isPayOnArrival ? Number(product.price) : total;
 
   // Load Paystack SDK
   useEffect(() => {
@@ -42,7 +46,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedZone && store.deliveryZones?.length > 0) {
+    if (!selectedZone && zones?.length > 0) {
       toast.error("Please select a delivery zone");
       return;
     }
@@ -63,7 +67,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
       const handler = window.PaystackPop.setup({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
         email: customerEmail,
-        amount: Math.round(total * 100), // Paystack expects kobo
+        amount: Math.round(checkoutTotal * 100), // Paystack expects kobo
         currency: "NGN",
         ref: paymentReference,
         subaccount: store.paystack_sub_account_code || undefined,
@@ -73,9 +77,9 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
           customer_phone: customerPhone,
           customer_address: customerAddress,
           items: JSON.stringify([{ productId: product.id, quantity: 1, price: product.price }]),
-          total: total,
+          total: checkoutTotal,
           delivery_fee: deliveryFee,
-          source: 'Direct'
+          source: new URLSearchParams(window.location.search).get('source') || 'Direct'
         },
         callback: function(response: any) {
           console.log("Paystack Response:", response);
@@ -185,7 +189,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
               </div>
 
               <div className="grid grid-cols-1 gap-2">
-                {store.deliveryZones?.map((zone: any) => (
+                {zones?.map((zone: any) => (
                   <button
                     key={zone.name}
                     type="button"
@@ -198,10 +202,13 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                     )}
                   >
                     <span>{zone.name}</span>
-                    <span>+ ₦{Number(zone.price).toLocaleString()}</span>
+                    <span className="flex flex-col items-end">
+                      <span>+ ₦{Number(zone.price).toLocaleString()}</span>
+                      {isPayOnArrival && <span className="text-[9px] text-zinc-500 font-medium">Pay on arrival</span>}
+                    </span>
                   </button>
                 ))}
-                {!store.deliveryZones && (
+                {zones.length === 0 && (
                    <p className="text-xs text-zinc-500 p-4 bg-white/5 rounded-2xl italic">No delivery zones configured. Shipping is free.</p>
                 )}
               </div>
@@ -215,17 +222,30 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
               </div>
               <div className="flex justify-between text-sm text-zinc-400">
                 <span>Delivery Fee</span>
-                <span>{selectedZone ? `₦${deliveryFee.toLocaleString()}` : "Select Zone"}</span>
+                <span>
+                  {selectedZone ? (
+                    isPayOnArrival ? (
+                      <span className="text-right block">
+                        ₦{deliveryFee.toLocaleString()}
+                        <span className="text-[10px] text-zinc-500 block">Pay to courier on arrival</span>
+                      </span>
+                    ) : (
+                      `₦${deliveryFee.toLocaleString()}`
+                    )
+                  ) : (
+                    "Select Zone"
+                  )}
+                </span>
               </div>
               <div className="h-[1px] bg-white/10 my-1" />
               <div className="flex justify-between items-center">
-                <span className="font-bold">Total</span>
-                <span className="text-xl font-black text-primary">₦{total.toLocaleString()}</span>
+                <span className="font-bold">Total to Pay Now</span>
+                <span className="text-xl font-black text-primary">₦{checkoutTotal.toLocaleString()}</span>
               </div>
             </div>
 
             <button
-              disabled={(!selectedZone && store.deliveryZones?.length > 0) || loading}
+              disabled={(!selectedZone && zones?.length > 0) || loading}
               className="w-full py-5 rounded-[24px] brand-gradient text-primary-foreground font-black text-lg shadow-[0_0_30px_rgba(158,226,55,0.3)] hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
             >
               {loading ? (

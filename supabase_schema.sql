@@ -10,9 +10,14 @@ CREATE TABLE IF NOT EXISTS public.stores (
     bank_name TEXT,
     account_number TEXT,
     account_name TEXT,
-    socials JSONB DEFAULT '{"whatsapp": true, "instagram": false, "tiktok": false}'::jsonb,
+    channels JSONB DEFAULT '{"whatsapp": true, "instagram": false, "tiktok": false}'::jsonb,
+    socials JSONB DEFAULT '{"email": "", "instagram": "", "tiktok": ""}'::jsonb,
     status TEXT DEFAULT 'Live',
     color TEXT,
+    logo TEXT,
+    description TEXT,
+    delivery_zones JSONB DEFAULT '[]'::jsonb,
+    delivery_payment_option TEXT DEFAULT 'checkout',
     visits INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

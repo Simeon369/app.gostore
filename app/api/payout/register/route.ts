@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       business_name: accountName,
       settlement_bank: bankCode,
       account_number: accountNumber,
-      percentage_charge: 10 // Gostore takes 10% commission
+      percentage_charge: 5 // Gostore takes 5% commission
     });
 
     const subAccountCode = subAccountData.subaccount_code;

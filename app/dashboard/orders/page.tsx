@@ -6,6 +6,7 @@ import { useState } from "react";
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -152,7 +153,7 @@ export default function OrdersPage() {
                     <Phone className="w-3.5 h-3.5 flex-shrink-0" /> {order.customer_phone}
                     <button onClick={() => {
                       navigator.clipboard.writeText(order.customer_phone);
-                      alert("Copied!");
+                      toast.success("Copied!");
                     }} className="p-1 hover:bg-muted rounded-md transition-all">
                       <Copy className="w-3 h-3" />
                     </button>

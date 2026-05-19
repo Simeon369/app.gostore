@@ -38,36 +38,55 @@ export default function DashboardPage() {
       const totalOrders = orders?.length || 0;
       const totalViews = store.visits || 0;
 
-      // Group orders by source (simulating platform breakdown)
-      const platformBreakdown = [
-        {
+      // Group orders by source
+      const channels = store.channels || { whatsapp: true, instagram: false, tiktok: false };
+      const activePlatforms = [];
+
+      if (channels.whatsapp) {
+        activePlatforms.push({
           platform: "WhatsApp",
           color: "bg-emerald-500",
           lightColor: "bg-emerald-500/10",
           textColor: "text-emerald-500",
           sales: orders?.filter(o => o.source === 'WhatsApp' && o.status === 'Paid').reduce((acc, o) => acc + Number(o.total), 0) || 0,
           orders: orders?.filter(o => o.source === 'WhatsApp').length || 0,
-          views: Math.floor(totalViews * 0.4), // Simulated breakdown for now
-        },
-        {
+        });
+      }
+      if (channels.instagram) {
+        activePlatforms.push({
           platform: "Instagram",
           color: "bg-pink-500",
           lightColor: "bg-pink-500/10",
           textColor: "text-pink-500",
           sales: orders?.filter(o => o.source === 'Instagram' && o.status === 'Paid').reduce((acc, o) => acc + Number(o.total), 0) || 0,
           orders: orders?.filter(o => o.source === 'Instagram').length || 0,
-          views: Math.floor(totalViews * 0.3),
-        },
-        {
+        });
+      }
+      if (channels.tiktok) {
+        activePlatforms.push({
           platform: "TikTok",
           color: "bg-sky-400",
           lightColor: "bg-sky-400/10",
           textColor: "text-sky-400",
           sales: orders?.filter(o => o.source === 'TikTok' && o.status === 'Paid').reduce((acc, o) => acc + Number(o.total), 0) || 0,
           orders: orders?.filter(o => o.source === 'TikTok').length || 0,
-          views: Math.floor(totalViews * 0.3),
-        },
-      ];
+        });
+      }
+
+      // Always include Direct
+      activePlatforms.push({
+        platform: "Direct",
+        color: "bg-primary",
+        lightColor: "bg-primary/10",
+        textColor: "text-primary",
+        sales: orders?.filter(o => (!o.source || o.source === 'Direct' || o.source === 'direct') && o.status === 'Paid').reduce((acc, o) => acc + Number(o.total), 0) || 0,
+        orders: orders?.filter(o => !o.source || o.source === 'Direct' || o.source === 'direct').length || 0,
+      });
+
+      const platformBreakdown = activePlatforms.map(p => ({
+        ...p,
+        views: totalViews > 0 ? Math.floor(totalViews / activePlatforms.length) : 0
+      }));
 
       return {
         store,
@@ -122,11 +141,18 @@ export default function DashboardPage() {
   } = dashboardData;
   const storeUrl = `https://gostore.ee/${store.slug}`;
 
-  const socialLinks = [
-    { id: "wa", label: "WhatsApp", icon: MessageCircle, color: "text-emerald-500", bg: "bg-emerald-500/10", borderActive: "border-emerald-500/30", url: `${storeUrl}?src=wa` },
-    { id: "ig", label: "Instagram", icon: Share2, color: "text-pink-500", bg: "bg-pink-500/10", borderActive: "border-pink-500/30", url: `${storeUrl}?src=ig` },
-    { id: "tt", label: "TikTok", icon: Share2, color: "text-sky-400", bg: "bg-sky-400/10", borderActive: "border-sky-400/30", url: `${storeUrl}?src=tt` },
-  ];
+  const socialLinks = [];
+  if (store.channels?.whatsapp) {
+    socialLinks.push({ id: "wa", label: "WhatsApp", icon: MessageCircle, color: "text-emerald-500", bg: "bg-emerald-500/10", borderActive: "border-emerald-500/30", url: `${storeUrl}?source=WhatsApp` });
+  }
+  if (store.channels?.instagram) {
+    socialLinks.push({ id: "ig", label: "Instagram", icon: Share2, color: "text-pink-500", bg: "bg-pink-500/10", borderActive: "border-pink-500/30", url: `${storeUrl}?source=Instagram` });
+  }
+  if (store.channels?.tiktok) {
+    socialLinks.push({ id: "tt", label: "TikTok", icon: Share2, color: "text-sky-400", bg: "bg-sky-400/10", borderActive: "border-sky-400/30", url: `${storeUrl}?source=TikTok` });
+  }
+  // Always include Direct Link
+  socialLinks.push({ id: "direct", label: "Direct Link", icon: Copy, color: "text-primary", bg: "bg-primary/10", borderActive: "border-primary/30", url: storeUrl });
 
   return (
     <div className="flex flex-col gap-10">

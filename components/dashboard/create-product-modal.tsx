@@ -6,19 +6,23 @@ import { useState, useRef, useEffect } from "react";
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 import Image from "next/image";
+import { toast } from "sonner";
 
 interface CreateProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  editProduct?: any;
 }
 
-export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProductModalProps) {
+export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: CreateProductModalProps) {
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [isPreorder, setIsPreorder] = useState(false);
   
+  const isEditing = !!editProduct;
+
   // Form State
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -28,6 +32,21 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
   const [tag, setTag] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (editProduct && isOpen) {
+      setName(editProduct.name || "");
+      setPrice(String(editProduct.price || ""));
+      setDescription(editProduct.description || "");
+      setStock(String(editProduct.stock || ""));
+      setCategory(editProduct.category || "Fashion");
+      setTag(editProduct.tag || "");
+      setIsPreorder(editProduct.is_preorder || false);
+      setImagePreview(editProduct.image || null);
+      setImageFile(null);
+    }
+  }, [editProduct, isOpen]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -40,6 +59,18 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
+
+  const resetForm = () => {
+    setName("");
+    setPrice("");
+    setDescription("");
+    setStock("");
+    setIsPreorder(false);
+    setImageFile(null);
+    setImagePreview(null);
+    setCategory("Fashion");
+    setTag("");
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,8 +86,10 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile) {
-      alert("Please upload a product image");
+
+    // Only require image for new products
+    if (!isEditing && !imageFile) {
+      toast.error("Please upload a product image");
       return;
     }
     
@@ -75,52 +108,75 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
 
       if (!store) throw new Error("Store not found. Please complete onboarding.");
 
-      // 2. Upload image to Supabase Storage
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${store.id}/${Date.now()}-${fileName}`;
+      let imageUrl = editProduct?.image || null;
+      let imagePath = editProduct?.image_path || null;
 
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, imageFile);
+      // 2. Upload new image if changed
+      if (imageFile) {
+        // Delete old image if editing and replacing
+        if (isEditing && editProduct?.image_path) {
+          await supabase.storage
+            .from('product-images')
+            .remove([editProduct.image_path]);
+        }
 
-      if (uploadError) throw uploadError;
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${store.id}/${Date.now()}-${fileName}`;
 
-      // 3. Get Public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, imageFile);
 
-      // 4. Insert product into database
-      const { error } = await supabase
-        .from('products')
-        .insert({
-          store_id: store.id,
-          name,
-          price: Number(price),
-          description,
-          stock: isPreorder ? 0 : Number(stock),
-          is_preorder: isPreorder,
-          category,
-          tag: isPreorder ? "Pre-order" : (tag || null),
-          image: publicUrl,
-          image_path: filePath
-        });
+        if (uploadError) throw uploadError;
 
-      if (error) throw error;
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
+
+        imageUrl = publicUrl;
+        imagePath = filePath;
+      }
+
+      const productData = {
+        name,
+        price: Number(price),
+        description,
+        stock: isPreorder ? 0 : Number(stock),
+        is_preorder: isPreorder,
+        category,
+        tag: isPreorder ? "Pre-order" : (tag || null),
+        image: imageUrl,
+        image_path: imagePath
+      };
+
+      if (isEditing) {
+        // UPDATE existing product
+        const { error } = await supabase
+          .from('products')
+          .update(productData)
+          .eq('id', editProduct.id);
+
+        if (error) throw error;
+        toast.success("Product updated successfully!");
+      } else {
+        // INSERT new product
+        const { error } = await supabase
+          .from('products')
+          .insert({
+            store_id: store.id,
+            ...productData
+          });
+
+        if (error) throw error;
+        toast.success("Product created successfully!");
+      }
 
       onSuccess?.();
       onClose();
-      // Reset form
-      setName("");
-      setPrice("");
-      setDescription("");
-      setStock("");
-      setIsPreorder(false);
-      setImageFile(null);
-      setImagePreview(null);
+      resetForm();
     } catch (error: any) {
-      alert(error.message || "Failed to create product");
+      toast.error(error.message || `Failed to ${isEditing ? 'update' : 'create'} product`);
     } finally {
       setLoading(false);
     }
@@ -135,7 +191,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={() => { onClose(); resetForm(); }}
           className="absolute inset-0 bg-background/80 backdrop-blur-sm"
         />
         
@@ -149,12 +205,12 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
             {/* Header - Fixed */}
             <div className="p-6 border-b border-border flex items-center justify-between bg-card z-20 shrink-0">
               <div>
-                <h2 className="text-xl font-black text-foreground">Add New Product</h2>
-                <p className="text-xs text-muted-foreground mt-1">Create a new product listing for your store.</p>
+                <h2 className="text-xl font-black text-foreground">{isEditing ? "Edit Product" : "Add New Product"}</h2>
+                <p className="text-xs text-muted-foreground mt-1">{isEditing ? "Update your product details below." : "Create a new product listing for your store."}</p>
               </div>
               <button 
                 type="button"
-                onClick={onClose}
+                onClick={() => { onClose(); resetForm(); }}
                 className="p-2 hover:bg-muted rounded-full transition-all text-muted-foreground hover:text-foreground"
               >
                 <X className="w-5 h-5" />
@@ -291,7 +347,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
             <div className="p-6 border-t border-border bg-card flex justify-end gap-3 shrink-0">
               <button 
                 type="button"
-                onClick={onClose}
+                onClick={() => { onClose(); resetForm(); }}
                 className="px-6 py-4 rounded-2xl text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
               >
                 Cancel
@@ -301,7 +357,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
                 disabled={loading}
                 className="px-8 py-4 rounded-2xl brand-gradient text-primary-foreground font-black flex items-center gap-2 hover:scale-[1.02] transition-all shadow-[0_0_20px_rgba(158,226,55,0.2)] disabled:opacity-50"
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Product"}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isEditing ? "Save Changes" : "Create Product")}
               </button>
             </div>
           </form>
