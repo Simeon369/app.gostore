@@ -8,6 +8,14 @@ import confetti from "canvas-confetti";
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 
+const formatWhatsAppNumber = (phone: string): string => {
+  let clean = phone.replace(/\D/g, '');
+  if (clean.startsWith('234')) return clean;
+  if (clean.startsWith('0')) return '234' + clean.slice(1);
+  if (!clean) return '';
+  return '234' + clean;
+};
+
 export function OnboardingWizard() {
   const supabase = createClient();
   const [step, setStep] = useState(1);
@@ -56,6 +64,7 @@ export function OnboardingWizard() {
       }
 
       const slug = storeName.toLowerCase().replace(/\s+/g, '-');
+      const formattedWhatsapp = formatWhatsAppNumber(whatsapp);
 
       // 1. Create the store
       const { error: storeError } = await supabase
@@ -65,7 +74,7 @@ export function OnboardingWizard() {
           name: storeName,
           slug,
           category,
-          whatsapp,
+          whatsapp: formattedWhatsapp,
           bank_name: bankName,
           account_number: accountNumber,
           account_name: accountName,

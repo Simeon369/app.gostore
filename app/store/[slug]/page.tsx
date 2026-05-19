@@ -19,8 +19,17 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { CheckoutModal } from "@/components/store/checkout-modal";
+import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+
+const formatWhatsAppNumber = (phone: string): string => {
+  let clean = phone.replace(/\D/g, '');
+  if (clean.startsWith('234')) return clean;
+  if (clean.startsWith('0')) return '234' + clean.slice(1);
+  if (!clean) return '';
+  return '234' + clean;
+};
 
 export default function StorefrontPage() {
   const params = useParams();
@@ -194,20 +203,25 @@ export default function StorefrontPage() {
       </AnimatePresence>
 
       {/* Dynamic Warm Banner */}
-      <div className="h-32 md:h-48 w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 relative overflow-hidden border-b border-white/5">
+      <div className="h-32 md:h-48 w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 relative overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,158,11,0.06),transparent_50%)]" />
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
+        
+        {/* Floating Theme Toggle */}
+        <div className="absolute top-4 right-4 z-20 bg-background/80 backdrop-blur-md rounded-2xl border border-border p-0.5 shadow-lg">
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Brand Header */}
       <header className="px-6 md:px-10 -mt-10 md:-mt-16 max-w-5xl mx-auto w-full relative z-10 flex flex-col gap-4">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="flex items-end gap-4">
-            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-background p-1.5 shadow-xl border border-white/10 overflow-hidden flex items-center justify-center">
+            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-background p-1.5 shadow-xl border border-border overflow-hidden flex items-center justify-center">
               {store.logo ? (
                 <Image src={store.logo} alt={store.name} width={112} height={112} className="w-full h-full object-cover rounded-full" />
               ) : (
-                <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center">
+                <div className="w-full h-full rounded-full bg-muted flex items-center justify-center">
                   <Store className="w-8 h-8 text-muted-foreground" />
                 </div>
               )}
@@ -226,18 +240,18 @@ export default function StorefrontPage() {
           
           <div className="flex items-center gap-2 mb-2">
             {store.whatsapp && (
-              <a href={`https://wa.me/${store.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all shadow-md">
+              <a href={`https://wa.me/${formatWhatsAppNumber(store.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all shadow-md">
                 <MessageCircle className="w-4 h-4" />
                 Chat on WhatsApp
               </a>
             )}
             {store.socials?.instagram && (
-              <a href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-zinc-400 transition-all">
+              <a href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-muted hover:bg-muted/80 rounded-2xl border border-border text-muted-foreground transition-all">
                 <Instagram className="w-4 h-4" />
               </a>
             )}
             {store.socials?.tiktok && (
-              <a href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-zinc-400 transition-all">
+              <a href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-muted hover:bg-muted/80 rounded-2xl border border-border text-muted-foreground transition-all">
                 <TikTok className="w-4 h-4" />
               </a>
             )}
@@ -245,17 +259,17 @@ export default function StorefrontPage() {
         </div>
 
         {store.description && (
-          <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-2xl mt-2">
+          <p className="text-muted-foreground text-sm md:text-base leading-relaxed max-w-2xl mt-2">
             {store.description}
           </p>
         )}
 
         {/* High-Trust Strip */}
-        <div className="flex flex-wrap gap-4 items-center text-zinc-500 text-[10px] md:text-xs font-bold uppercase tracking-widest border-t border-b border-white/5 py-4 mt-2">
+        <div className="flex flex-wrap gap-4 items-center text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest border-t border-b border-border py-4 mt-2">
           <span className="flex items-center gap-1.5">⚡ Instant Checkout</span>
-          <span className="w-1 h-1 rounded-full bg-white/10" />
+          <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
           <span className="flex items-center gap-1.5">🛡️ Secured Payments</span>
-          <span className="w-1 h-1 rounded-full bg-white/10" />
+          <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
           <span className="flex items-center gap-1.5">📦 Direct Delivery</span>
         </div>
       </header>
@@ -271,8 +285,8 @@ export default function StorefrontPage() {
               className={cn(
                 "px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap transition-all border uppercase tracking-wider",
                 selectedCategory === cat 
-                  ? "bg-primary border-primary text-black shadow-lg" 
-                  : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/20"
+                  ? "bg-primary border-primary text-primary-foreground shadow-lg" 
+                  : "bg-muted border-border text-muted-foreground hover:border-muted-foreground/30"
               )}
             >
               {cat}
@@ -287,9 +301,9 @@ export default function StorefrontPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search products..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 text-foreground text-xs font-bold outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-muted border border-border focus:border-primary/50 text-foreground text-xs font-bold outline-none transition-all"
           />
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         </div>
       </section>
 
@@ -303,10 +317,10 @@ export default function StorefrontPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex flex-col rounded-[24px] border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all overflow-hidden shadow-lg group relative"
+                className="flex flex-col rounded-[24px] border border-border bg-card hover:bg-muted/40 transition-all overflow-hidden shadow-lg group relative"
               >
                 {/* Image Area */}
-                <div className="relative aspect-square overflow-hidden bg-white/5">
+                <Link href={`/store/${slug}/product/${product.id}`} className="relative aspect-square overflow-hidden bg-muted/20 block">
                   {product.image ? (
                     <Image 
                       src={product.image} 
@@ -325,47 +339,28 @@ export default function StorefrontPage() {
                       "absolute top-3 left-3 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest z-10 shadow-lg",
                       product.tag === "Sold Out" ? "bg-red-500 text-white" : 
                       product.tag === "Pre-order" ? "bg-orange-500 text-white" : 
-                      "bg-primary text-black"
+                      "bg-primary text-primary-foreground"
                     )}>
                       {product.tag}
                     </div>
                   )}
-                </div>
+                </Link>
                 
                 {/* Product Info */}
                 <div className="flex flex-col gap-3 p-4 flex-1 justify-between">
-                  <div>
-                    <h3 className="font-bold text-sm md:text-base line-clamp-2 text-zinc-100 min-h-[40px]">{product.name}</h3>
+                  <Link href={`/store/${slug}/product/${product.id}`} className="block group/title">
+                    <h3 className="font-bold text-sm md:text-base line-clamp-2 text-foreground min-h-[40px] group-hover/title:text-primary transition-colors">{product.name}</h3>
                     <p className="text-primary font-black text-base mt-1">₦{Number(product.price).toLocaleString()}</p>
-                  </div>
+                  </Link>
                   
-                  {/* Action Buttons (Encourages Buying!) */}
+                  {/* Action Buttons */}
                   <div className="flex gap-2 mt-1">
-                    <button 
-                      onClick={() => setCheckoutProduct(product)}
-                      disabled={product.tag === "Sold Out"}
-                      className={cn(
-                        "flex-1 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-wider text-center transition-all shadow-md",
-                        product.tag === "Sold Out"
-                          ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700/50"
-                          : "bg-primary hover:bg-primary/95 text-black"
-                      )}
+                    <Link 
+                      href={`/store/${slug}/product/${product.id}`}
+                      className="flex-1 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-wider text-center transition-all shadow-md bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center"
                     >
-                      {product.tag === "Sold Out" ? "Sold Out" : "Buy Now"}
-                    </button>
-                    
-                    {store.whatsapp && (
-                      <button 
-                        onClick={() => {
-                          const text = `Hi! I'm interested in the ${product.name} (₦${Number(product.price).toLocaleString()}) from your store: ${window.location.href}`;
-                          window.open(`https://wa.me/${store.whatsapp}?text=${encodeURIComponent(text)}`);
-                        }}
-                        className="px-3 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-zinc-400 transition-all flex items-center justify-center"
-                        title="Inquire on WhatsApp"
-                      >
-                        <MessageCircle className="w-4 h-4 text-emerald-400" />
-                      </button>
-                    )}
+                      View Product
+                    </Link>
                   </div>
                 </div>
               </motion.div>
@@ -374,7 +369,7 @@ export default function StorefrontPage() {
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
             <ShoppingBag className="w-12 h-12 text-muted-foreground opacity-20" />
-            <p className="text-zinc-500 font-bold">No products found in this category.</p>
+            <p className="text-muted-foreground font-bold">No products found in this category.</p>
           </div>
         )}
       </main>

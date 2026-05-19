@@ -9,6 +9,14 @@ import { cn } from "@/utils/cn";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+const formatWhatsAppNumber = (phone: string): string => {
+  let clean = phone.replace(/\D/g, '');
+  if (clean.startsWith('234')) return clean;
+  if (clean.startsWith('0')) return '234' + clean.slice(1);
+  if (!clean) return '';
+  return '234' + clean;
+};
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("store");
   const [saving, setSaving] = useState(false);
@@ -122,7 +130,7 @@ export default function SettingsPage() {
           name: storeName,
           slug: storeSlug,
           description: storeDesc,
-          whatsapp: whatsapp,
+          whatsapp: formatWhatsAppNumber(whatsapp),
           socials: socials,
           channels: channels
         })

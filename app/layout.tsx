@@ -36,7 +36,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-body">
         <ThemeProvider
           attribute="data-theme"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
