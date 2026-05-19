@@ -8,7 +8,7 @@ import { cn } from "@/utils/cn";
 
 export function LinkGenerator({ storeSlug }: { storeSlug: string }) {
   const [copied, setCopied] = useState<string | null>(null);
-  const storeUrl = `https://gostore.ee/${storeSlug}`;
+  const storeUrl = `https://app-gostore.vercel.app/store/${storeSlug}`;
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);

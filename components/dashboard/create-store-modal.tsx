@@ -76,7 +76,7 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Subdomain</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Store Link slug</label>
               <div className="relative">
                 <input 
                   type="text" 
@@ -84,11 +84,8 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
                   required 
                   value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-700 font-bold pr-32"
+                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-700 font-bold"
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 text-xs font-bold pointer-events-none">
-                  .gostore.ee
-                </div>
               </div>
             </div>
           </div>
@@ -96,7 +93,7 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex gap-3">
             <Globe className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
-              Your store will be instantly live at <span className="text-white font-bold">{slug || "..."}.gostore.ee</span>
+              Your store will be instantly live at <span className="text-white font-bold">app-gostore.vercel.app/store/{slug || "..."}</span>
             </p>
           </div>
 
