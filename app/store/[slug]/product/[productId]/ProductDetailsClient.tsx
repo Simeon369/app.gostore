@@ -11,8 +11,10 @@ import {
   Loader2, 
   ShieldCheck, 
   Truck, 
-  Zap 
+  Zap,
+  Share2
 } from "lucide-react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -158,6 +160,24 @@ export default function ProductDetailsClient() {
       </div>
     );
   }
+
+  const handleShareProduct = () => {
+    if (!product || !store) return;
+    const url = window.location.href;
+    const title = `${product.name} | Buy for ₦${Number(product.price).toLocaleString()} | ${store.name}`;
+    const text = product.description || `Check out ${product.name} at ${store.name} official storefront!`;
+
+    if (navigator.share) {
+      navigator.share({
+        title,
+        text,
+        url
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(url);
+      toast.success("Product link copied to clipboard!");
+    }
+  };
 
   const handleWhatsAppInquiry = () => {
     const text = `Hi! I'm interested in the ${product.name} (₦${Number(product.price).toLocaleString()}) from your store: ${window.location.href}`;
@@ -307,6 +327,14 @@ export default function ProductDetailsClient() {
                   Chat on WhatsApp
                 </button>
               )}
+
+              <button
+                onClick={handleShareProduct}
+                className="py-4 px-6 rounded-[20px] bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
+              </button>
             </div>
 
             {/* Trust Strip */}

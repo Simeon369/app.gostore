@@ -11,8 +11,10 @@ import {
   ExternalLink,
   ChevronRight,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Share2
 } from "lucide-react";
+import { toast } from "sonner";
 import { Instagram, TikTok } from "../../../components/icons";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
@@ -123,6 +125,24 @@ export default function StorefrontClient() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [checkoutProduct, setCheckoutProduct] = useState<any>(null);
+
+  const handleShareStore = () => {
+    if (!storeData?.store) return;
+    const url = window.location.href;
+    const title = `${storeData.store.name} | Official Storefront`;
+    const text = storeData.store.description || `Check out ${storeData.store.name} official storefront on GoStore!`;
+
+    if (navigator.share) {
+      navigator.share({
+        title,
+        text,
+        url
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(url);
+      toast.success("Store link copied to clipboard!");
+    }
+  };
 
   const categories = useMemo(() => {
     if (!storeData?.store) return ["All"];
@@ -247,6 +267,13 @@ export default function StorefrontClient() {
                 Chat on WhatsApp
               </a>
             )}
+            <button 
+              onClick={handleShareStore}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-xs font-bold transition-all shadow-md"
+            >
+              <Share2 className="w-4 h-4" />
+              Share Store
+            </button>
             {store.socials?.instagram && (
               <a href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-muted hover:bg-muted/80 rounded-2xl border border-border text-muted-foreground transition-all">
                 <Instagram className="w-4 h-4" />

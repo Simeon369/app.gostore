@@ -1,11 +1,12 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, ExternalLink, Package, Loader2, Copy, MessageCircle, Ban, Link2 } from "lucide-react";
+import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, ExternalLink, Package, Loader2, Copy, MessageCircle, Ban, Link2, FolderOpen } from "lucide-react";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/utils/cn";
 import { CreateProductModal } from "@/components/dashboard/create-product-modal";
+import { ManageCollectionsModal } from "@/components/dashboard/manage-collections-modal";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ export default function ProductsPage() {
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [productToDelete, setProductToDelete] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -124,10 +126,10 @@ export default function ProductsPage() {
       toast.error("Store slug not found");
       return;
     }
-    const baseUrl = `https://app-gostore.vercel.app/store/${store.slug}`;
+    const baseUrl = `https://app-gostore.vercel.app/store/${store.slug}/product/${product.id}`;
     const url = source ? `${baseUrl}?source=${source}` : baseUrl;
     navigator.clipboard.writeText(url);
-    toast.success(`${source || 'Direct'} link copied!`);
+    toast.success(`${source || 'Direct'} product link copied!`);
     setMenuConfig(null);
   };
 
@@ -158,12 +160,20 @@ export default function ProductsPage() {
           <h1 className="text-2xl lg:text-3xl font-bold tracking-tight mb-1">Products</h1>
           <p className="text-muted-foreground text-sm">Manage your inventory and product listings.</p>
         </div>
-        <button 
-          onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
-          className="px-5 py-3 rounded-2xl brand-gradient text-primary-foreground font-bold shadow-[0_0_20px_rgba(158,226,55,0.2)] transition-all flex items-center gap-2 w-fit text-sm"
-        >
-          <Plus className="w-4 h-4" /> Add Product
-        </button>
+        <div className="flex items-center gap-3 w-fit">
+          <button 
+            onClick={() => setIsCollectionsModalOpen(true)}
+            className="px-5 py-3 rounded-2xl bg-muted border border-border text-foreground hover:bg-muted/80 font-bold transition-all flex items-center gap-2 text-sm"
+          >
+            <FolderOpen className="w-4 h-4 text-primary" /> Collections
+          </button>
+          <button 
+            onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
+            className="px-5 py-3 rounded-2xl brand-gradient text-primary-foreground font-bold shadow-[0_0_20px_rgba(158,226,55,0.2)] transition-all flex items-center gap-2 text-sm"
+          >
+            <Plus className="w-4 h-4" /> Add Product
+          </button>
+        </div>
       </div>
 
       {/* Filters & Search */}
@@ -332,6 +342,12 @@ export default function ProductsPage() {
         onClose={() => { setIsModalOpen(false); setEditingProduct(null); }}
         onSuccess={() => refetch()}
         editProduct={editingProduct}
+      />
+
+      <ManageCollectionsModal 
+        isOpen={isCollectionsModalOpen}
+        onClose={() => setIsCollectionsModalOpen(false)}
+        onSuccess={() => refetch()}
       />
 
       {/* Global Dropdown Menu */}
