@@ -37,21 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: `https://app-gostore.vercel.app/store/${slug}`,
       siteName: "GoStore",
-      images: [
-        {
-          url: logoUrl,
-          width: 800,
-          height: 800,
-          alt: `${store.name} Logo`,
-        },
-      ],
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [logoUrl],
     },
   };
 }

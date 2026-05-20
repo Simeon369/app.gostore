@@ -26,10 +26,10 @@ export const metadata: Metadata = {
     siteName: "GoStore",
     images: [
       {
-        url: "https://app-gostore.vercel.app/gostore-logo.png",
-        width: 800,
-        height: 800,
-        alt: "GoStore Logo",
+        url: "https://app-gostore.vercel.app/app-preview.png",
+        width: 1200,
+        height: 630,
+        alt: "GoStore - Create Your WhatsApp Storefront",
       },
     ],
     type: "website",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GoStore | Create Your WhatsApp Storefront in 5 Minutes",
     description: "Build a high-converting, professional online storefront for your business. Accept payments with Paystack, configure split payouts, and chat directly on WhatsApp.",
-    images: ["https://app-gostore.vercel.app/gostore-logo.png"],
+    images: ["https://app-gostore.vercel.app/app-preview.png"],
   },
 };
 

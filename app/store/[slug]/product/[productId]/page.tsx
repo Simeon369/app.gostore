@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `${product.name} | Buy for ₦${Number(product.price).toLocaleString()} | ${store.name}`;
   const description = product.description || `Buy ${product.name} online at ${store.name} official storefront. Instant Checkout and Direct WhatsApp support.`;
-  const imageUrl = product.image || "https://app-gostore.vercel.app/gostore-logo.png";
+  const imageUrl = product.image || "https://app-gostore.vercel.app/app-preview.png";
 
   return {
     metadataBase: new URL("https://app-gostore.vercel.app"),
