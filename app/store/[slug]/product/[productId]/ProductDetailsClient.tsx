@@ -388,7 +388,7 @@ export default function ProductDetailsClient() {
               </a>
             )}
 
-            {store.socials?.instagram && (
+            {store.socials?.instagram && typeof store.socials.instagram === "string" && (
               <a 
                 href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`}
                 target="_blank"
@@ -400,7 +400,7 @@ export default function ProductDetailsClient() {
               </a>
             )}
 
-            {store.socials?.tiktok && (
+            {store.socials?.tiktok && typeof store.socials.tiktok === "string" && (
               <a 
                 href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`}
                 target="_blank"

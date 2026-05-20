@@ -274,12 +274,12 @@ export default function StorefrontClient() {
               <Share2 className="w-4 h-4" />
               Share Store
             </button>
-            {store.socials?.instagram && (
+            {store.socials?.instagram && typeof store.socials.instagram === "string" && (
               <a href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-muted hover:bg-muted/80 rounded-2xl border border-border text-muted-foreground transition-all">
                 <Instagram className="w-4 h-4" />
               </a>
             )}
-            {store.socials?.tiktok && (
+            {store.socials?.tiktok && typeof store.socials.tiktok === "string" && (
               <a href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-muted hover:bg-muted/80 rounded-2xl border border-border text-muted-foreground transition-all">
                 <TikTok className="w-4 h-4" />
               </a>
@@ -346,51 +346,48 @@ export default function StorefrontClient() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex flex-col rounded-[24px] border border-border bg-card hover:bg-muted/40 transition-all overflow-hidden shadow-lg group relative"
+                className="relative aspect-square rounded-[32px] md:rounded-[40px] overflow-hidden group shadow-lg border border-border/10 bg-zinc-900 transition-all duration-300"
               >
-                {/* Image Area */}
-                <Link href={`/store/${slug}/product/${product.id}`} className="relative aspect-square overflow-hidden bg-muted/20 block">
-                  {product.image ? (
-                    <Image 
-                      src={product.image} 
-                      alt={product.name} 
-                      fill 
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                      <ShoppingBag className="w-10 h-10 text-muted-foreground opacity-30" />
-                    </div>
-                  )}
-                  
-                  {product.tag && (
-                    <div className={cn(
-                      "absolute top-3 left-3 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest z-10 shadow-lg",
-                      product.tag === "Sold Out" ? "bg-red-500 text-white" : 
-                      product.tag === "Pre-order" ? "bg-orange-500 text-white" : 
-                      "bg-primary text-primary-foreground"
-                    )}>
-                      {product.tag}
-                    </div>
-                  )}
-                </Link>
-                
-                {/* Product Info */}
-                <div className="flex flex-col gap-3 p-4 flex-1 justify-between">
-                  <Link href={`/store/${slug}/product/${product.id}`} className="block group/title">
-                    <h3 className="font-bold text-sm md:text-base line-clamp-2 text-foreground min-h-[40px] group-hover/title:text-primary transition-colors">{product.name}</h3>
-                    <p className="text-primary font-black text-base mt-1">₦{Number(product.price).toLocaleString()}</p>
-                  </Link>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 mt-1">
-                    <Link 
-                      href={`/store/${slug}/product/${product.id}`}
-                      className="flex-1 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-wider text-center transition-all shadow-md bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center"
-                    >
-                      View Product
-                    </Link>
+                {/* Clickable Card link */}
+                <Link href={`/store/${slug}/product/${product.id}`} className="absolute inset-0 z-10" />
+
+                {/* Product Image */}
+                {product.image ? (
+                  <Image 
+                    src={product.image} 
+                    alt={product.name} 
+                    fill 
+                    className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out z-0"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-800 z-0">
+                    <ShoppingBag className="w-10 h-10 text-muted-foreground opacity-30" />
                   </div>
+                )}
+
+                {/* Dynamic Tag Overlay */}
+                {product.tag && (
+                  <div className={cn(
+                    "absolute top-3 left-3 px-2.5 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest z-20 shadow-lg border border-white/5 backdrop-blur-md",
+                    product.tag === "Sold Out" ? "bg-red-500/80 text-white" : 
+                    product.tag === "Pre-order" ? "bg-orange-500/80 text-white" : 
+                    "bg-primary/80 text-primary-foreground"
+                  )}>
+                    {product.tag}
+                  </div>
+                )}
+
+                {/* Smooth Dark Vignette Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent pointer-events-none z-10 transition-opacity duration-300 group-hover:opacity-90" />
+
+                {/* Info Text overlays */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 flex flex-col gap-1 z-20 pointer-events-none">
+                  <h3 className="font-bold text-xs sm:text-base md:text-lg text-white leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+                    {product.name}
+                  </h3>
+                  <p className="text-primary font-black text-xs sm:text-sm md:text-base tracking-wide">
+                    ₦{Number(product.price).toLocaleString()}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -445,7 +442,7 @@ export default function StorefrontClient() {
               </a>
             )}
 
-            {store.socials?.instagram && (
+            {store.socials?.instagram && typeof store.socials.instagram === "string" && (
               <a 
                 href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`}
                 target="_blank"
@@ -457,7 +454,7 @@ export default function StorefrontClient() {
               </a>
             )}
 
-            {store.socials?.tiktok && (
+            {store.socials?.tiktok && typeof store.socials.tiktok === "string" && (
               <a 
                 href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`}
                 target="_blank"
