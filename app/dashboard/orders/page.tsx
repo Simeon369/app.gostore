@@ -175,12 +175,38 @@ export default function OrdersPage() {
                   {(order.items as any[]).map((item, idx) => {
                     const product = getProduct(item.productId);
                     return (
-                      <div key={idx} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-primary">x{item.quantity}</span>
-                          <span className="text-sm font-bold text-foreground truncate max-w-[140px]">{product?.name || "Unknown Product"}</span>
+                      <div key={idx} className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-black text-primary mt-0.5">x{item.quantity}</span>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-foreground truncate max-w-[180px]">{product?.name || "Unknown Product"}</span>
+                            {item.variants && Object.values(item.variants).some(Boolean) && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.variants.size_or_length && (
+                                  <span className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase">
+                                    Size: {item.variants.size_or_length}
+                                  </span>
+                                )}
+                                {item.variants.color && (
+                                  <span className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase">
+                                    Color: {item.variants.color}
+                                  </span>
+                                )}
+                                {item.variants.texture && (
+                                  <span className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase">
+                                    Texture: {item.variants.texture}
+                                  </span>
+                                )}
+                                {item.variants.type && (
+                                  <span className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase">
+                                    Type: {item.variants.type}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-sm font-bold text-foreground">₦{Number(item.price).toLocaleString()}</span>
+                        <span className="text-sm font-bold text-foreground mt-0.5">₦{Number(item.price).toLocaleString()}</span>
                       </div>
                     );
                   })}

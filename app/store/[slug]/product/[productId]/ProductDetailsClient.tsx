@@ -12,11 +12,12 @@ import {
   ShieldCheck, 
   Truck, 
   Zap,
-  Share2
+  Share2,
+  ChevronDown
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { CheckoutModal } from "@/components/store/checkout-modal";
@@ -44,6 +45,27 @@ export default function ProductDetailsClient() {
   const [verifying, setVerifying] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [checkoutProduct, setCheckoutProduct] = useState<any>(null);
+
+  // Universal Variant Selections
+  const [selectedSize, setSelectedSize] = useState<string>("");
+  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [selectedTexture, setSelectedTexture] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const variantsRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside the variants container
+  useEffect(() => {
+    if (!openDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (variantsRef.current && !variantsRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [openDropdown]);
 
   // Load payment SDK scripts
   useEffect(() => {
@@ -179,8 +201,52 @@ export default function ProductDetailsClient() {
     }
   };
 
+  const isSelectionComplete = 
+    (!product?.sizes_or_lengths?.length || selectedSize) &&
+    (!product?.colors?.length || selectedColor) &&
+    (!product?.textures?.length || selectedTexture) &&
+    (!product?.types?.length || selectedType);
+
+  const handleBuyNow = () => {
+    if (product.tag === "Sold Out") return;
+    
+    if (!isSelectionComplete) {
+      setShowValidationErrors(true);
+      
+      const missing: string[] = [];
+      if (product.sizes_or_lengths?.length && !selectedSize) missing.push("Size/Length");
+      if (product.colors?.length && !selectedColor) missing.push("Color");
+      if (product.textures?.length && !selectedTexture) missing.push("Texture");
+      if (product.types?.length && !selectedType) missing.push("Type");
+      
+      toast.error(`Please select: ${missing.join(", ")}`);
+      return;
+    }
+    
+    setCheckoutProduct({
+      ...product,
+      selectedSize,
+      selectedColor,
+      selectedTexture,
+      selectedType
+    });
+  };
+
   const handleWhatsAppInquiry = () => {
-    const text = `Hi! I'm interested in the ${product.name} (₦${Number(product.price).toLocaleString()}) from your store: ${window.location.href}`;
+    let text = `Hi! I'm interested in the ${product.name} (₦${Number(product.price).toLocaleString()})`;
+    
+    // Add selected variants if any
+    const selected: string[] = [];
+    if (selectedSize) selected.push(`Size/Length: ${selectedSize}`);
+    if (selectedColor) selected.push(`Color: ${selectedColor}`);
+    if (selectedTexture) selected.push(`Texture: ${selectedTexture}`);
+    if (selectedType) selected.push(`Type: ${selectedType}`);
+    
+    if (selected.length > 0) {
+      text += ` (${selected.join(", ")})`;
+    }
+    
+    text += ` from your store: ${window.location.href}`;
     window.open(`https://wa.me/${formatWhatsAppNumber(store.whatsapp)}?text=${encodeURIComponent(text)}`);
   };
 
@@ -300,15 +366,291 @@ export default function ProductDetailsClient() {
               )}
             </div>
 
+            {/* Variant Dropdowns Section */}
+            {(product.sizes_or_lengths?.length > 0 ||
+              product.colors?.length > 0 ||
+              product.textures?.length > 0 ||
+              product.types?.length > 0) && (
+              <>
+                <div className="h-[1px] bg-border w-full" />
+                <div className="flex flex-col gap-4 bg-card border border-border p-5 rounded-[24px] shadow-sm">
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-foreground">Select Variations</h3>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Please choose your preferred options before checking out.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    {/* Sizes — Custom Dropdown */}
+                    {product.sizes_or_lengths?.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Size / Length <span className="text-primary font-bold">*</span>
+                        </label>
+                        <div className="relative" data-variant-dropdown="size">
+                          <button
+                            type="button"
+                            onClick={() => setOpenDropdown(openDropdown === 'size' ? null : 'size')}
+                            className={cn(
+                              "w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold text-foreground bg-muted transition-all cursor-pointer",
+                              showValidationErrors && !selectedSize
+                                ? "border-red-500 bg-red-500/5"
+                                : openDropdown === 'size'
+                                ? "border-primary/50 bg-muted"
+                                : "border-border hover:border-primary/30"
+                            )}
+                          >
+                            <span className={cn("truncate", !selectedSize && "text-muted-foreground/60")}>
+                              {selectedSize || "Choose Size / Length"}
+                            </span>
+                            <ChevronDown className={cn(
+                              "w-3.5 h-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+                              openDropdown === 'size' && "rotate-180"
+                            )} />
+                          </button>
+                          <AnimatePresence>
+                            {openDropdown === 'size' && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute z-30 top-full mt-1.5 w-full bg-card border border-border rounded-2xl shadow-xl overflow-hidden"
+                              >
+                                <div className="p-2 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                                  {product.sizes_or_lengths.map((opt: string) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedSize(opt);
+                                        setOpenDropdown(null);
+                                        if (showValidationErrors) setShowValidationErrors(false);
+                                      }}
+                                      className={cn(
+                                        "w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                                        selectedSize === opt
+                                          ? "bg-primary text-primary-foreground"
+                                          : "text-foreground hover:bg-muted"
+                                      )}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Colors — Custom Dropdown */}
+                    {product.colors?.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Color <span className="text-primary font-bold">*</span>
+                        </label>
+                        <div className="relative" data-variant-dropdown="color">
+                          <button
+                            type="button"
+                            onClick={() => setOpenDropdown(openDropdown === 'color' ? null : 'color')}
+                            className={cn(
+                              "w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold text-foreground bg-muted transition-all cursor-pointer",
+                              showValidationErrors && !selectedColor
+                                ? "border-red-500 bg-red-500/5"
+                                : openDropdown === 'color'
+                                ? "border-primary/50 bg-muted"
+                                : "border-border hover:border-primary/30"
+                            )}
+                          >
+                            <span className={cn("truncate", !selectedColor && "text-muted-foreground/60")}>
+                              {selectedColor || "Choose Color"}
+                            </span>
+                            <ChevronDown className={cn(
+                              "w-3.5 h-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+                              openDropdown === 'color' && "rotate-180"
+                            )} />
+                          </button>
+                          <AnimatePresence>
+                            {openDropdown === 'color' && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute z-30 top-full mt-1.5 w-full bg-card border border-border rounded-2xl shadow-xl overflow-hidden"
+                              >
+                                <div className="p-2 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                                  {product.colors.map((opt: string) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedColor(opt);
+                                        setOpenDropdown(null);
+                                        if (showValidationErrors) setShowValidationErrors(false);
+                                      }}
+                                      className={cn(
+                                        "w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                                        selectedColor === opt
+                                          ? "bg-primary text-primary-foreground"
+                                          : "text-foreground hover:bg-muted"
+                                      )}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Textures — Custom Dropdown */}
+                    {product.textures?.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Texture <span className="text-primary font-bold">*</span>
+                        </label>
+                        <div className="relative" data-variant-dropdown="texture">
+                          <button
+                            type="button"
+                            onClick={() => setOpenDropdown(openDropdown === 'texture' ? null : 'texture')}
+                            className={cn(
+                              "w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold text-foreground bg-muted transition-all cursor-pointer",
+                              showValidationErrors && !selectedTexture
+                                ? "border-red-500 bg-red-500/5"
+                                : openDropdown === 'texture'
+                                ? "border-primary/50 bg-muted"
+                                : "border-border hover:border-primary/30"
+                            )}
+                          >
+                            <span className={cn("truncate", !selectedTexture && "text-muted-foreground/60")}>
+                              {selectedTexture || "Choose Texture"}
+                            </span>
+                            <ChevronDown className={cn(
+                              "w-3.5 h-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+                              openDropdown === 'texture' && "rotate-180"
+                            )} />
+                          </button>
+                          <AnimatePresence>
+                            {openDropdown === 'texture' && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute z-30 top-full mt-1.5 w-full bg-card border border-border rounded-2xl shadow-xl overflow-hidden"
+                              >
+                                <div className="p-2 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                                  {product.textures.map((opt: string) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedTexture(opt);
+                                        setOpenDropdown(null);
+                                        if (showValidationErrors) setShowValidationErrors(false);
+                                      }}
+                                      className={cn(
+                                        "w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                                        selectedTexture === opt
+                                          ? "bg-primary text-primary-foreground"
+                                          : "text-foreground hover:bg-muted"
+                                      )}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Types — Custom Dropdown */}
+                    {product.types?.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Type <span className="text-primary font-bold">*</span>
+                        </label>
+                        <div className="relative" data-variant-dropdown="type">
+                          <button
+                            type="button"
+                            onClick={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
+                            className={cn(
+                              "w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold text-foreground bg-muted transition-all cursor-pointer",
+                              showValidationErrors && !selectedType
+                                ? "border-red-500 bg-red-500/5"
+                                : openDropdown === 'type'
+                                ? "border-primary/50 bg-muted"
+                                : "border-border hover:border-primary/30"
+                            )}
+                          >
+                            <span className={cn("truncate", !selectedType && "text-muted-foreground/60")}>
+                              {selectedType || "Choose Type"}
+                            </span>
+                            <ChevronDown className={cn(
+                              "w-3.5 h-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+                              openDropdown === 'type' && "rotate-180"
+                            )} />
+                          </button>
+                          <AnimatePresence>
+                            {openDropdown === 'type' && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute z-30 top-full mt-1.5 w-full bg-card border border-border rounded-2xl shadow-xl overflow-hidden"
+                              >
+                                <div className="p-2 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                                  {product.types.map((opt: string) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedType(opt);
+                                        setOpenDropdown(null);
+                                        if (showValidationErrors) setShowValidationErrors(false);
+                                      }}
+                                      className={cn(
+                                        "w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                                        selectedType === opt
+                                          ? "bg-primary text-primary-foreground"
+                                          : "text-foreground hover:bg-muted"
+                                      )}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="h-[1px] bg-border w-full" />
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col  gap-3">
               <button
-                onClick={() => setCheckoutProduct(product)}
+                onClick={handleBuyNow}
                 disabled={product.tag === "Sold Out"}
                 className={cn(
-                  "flex-1 py-4 px-6 rounded-[20px] font-black text-xs uppercase tracking-wider text-center transition-all shadow-lg flex items-center justify-center gap-2",
+                  "flex-1 py-4 px-6 rounded-[20px] font-black text-xs uppercase tracking-wider text-center transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer",
                   product.tag === "Sold Out"
                     ? "bg-muted-foreground/20 text-muted-foreground/60 cursor-not-allowed border border-border"
                     : "bg-primary hover:bg-primary/95 text-primary-foreground hover:scale-[1.01]"

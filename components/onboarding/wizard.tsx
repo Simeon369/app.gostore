@@ -415,6 +415,13 @@ export function OnboardingWizard() {
               exit="exit"
               className="flex flex-col gap-6"
             >
+              <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex gap-3 text-sm text-primary font-medium">
+                <span className="text-xl leading-none">💡</span>
+                <p>
+                  <strong className="font-black">Zero Gateway Fees:</strong> GoStore takes a flat 5% commission on your sales. We automatically adjust the customer's checkout price to cover Paystack processing fees so your payout is 100% protected!
+                </p>
+              </div>
+
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
                   <Building2 className="w-3 h-3" /> Bank Name

@@ -1,12 +1,13 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Info, Loader2, Image as ImageIcon } from "lucide-react";
+import { X, Upload, Info, Loader2, Image as ImageIcon, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 import Image from "next/image";
 import { toast } from "sonner";
+import { calculateGrossAmount } from "@/utils/pricing";
 
 interface CreateProductModalProps {
   isOpen: boolean;
@@ -36,6 +37,56 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // Universal Variants State
+  const [showVariantsSection, setShowVariantsSection] = useState(false);
+  const [activeVariantCategory, setActiveVariantCategory] = useState<string | null>(null); // 'size', 'color', 'texture', 'type'
+  
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [colors, setColors] = useState<string[]>([]);
+  const [textures, setTextures] = useState<string[]>([]);
+  const [types, setTypes] = useState<string[]>([]);
+  
+  const [sizeInput, setSizeInput] = useState("");
+  const [colorInput, setColorInput] = useState("");
+  const [textureInput, setTextureInput] = useState("");
+  const [typeInput, setTypeInput] = useState("");
+
+  const handleAddSize = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const val = sizeInput.trim();
+    if (val && !sizes.includes(val)) {
+      setSizes([...sizes, val]);
+    }
+    setSizeInput("");
+  };
+
+  const handleAddColor = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const val = colorInput.trim();
+    if (val && !colors.includes(val)) {
+      setColors([...colors, val]);
+    }
+    setColorInput("");
+  };
+
+  const handleAddTexture = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const val = textureInput.trim();
+    if (val && !textures.includes(val)) {
+      setTextures([...textures, val]);
+    }
+    setTextureInput("");
+  };
+
+  const handleAddType = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const val = typeInput.trim();
+    if (val && !types.includes(val)) {
+      setTypes([...types, val]);
+    }
+    setTypeInput("");
+  };
+
   // Pre-fill form when editing
   useEffect(() => {
     if (editProduct && isOpen) {
@@ -49,6 +100,28 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
       setIsPreorder(editProduct.is_preorder || false);
       setImagePreview(editProduct.image || null);
       setImageFile(null);
+
+      // Pre-fill variants
+      const preSizes = editProduct.sizes_or_lengths || [];
+      const preColors = editProduct.colors || [];
+      const preTextures = editProduct.textures || [];
+      const preTypes = editProduct.types || [];
+      
+      setSizes(preSizes);
+      setColors(preColors);
+      setTextures(preTextures);
+      setTypes(preTypes);
+
+      if (
+        preSizes.length > 0 ||
+        preColors.length > 0 ||
+        preTextures.length > 0 ||
+        preTypes.length > 0
+      ) {
+        setShowVariantsSection(true);
+      } else {
+        setShowVariantsSection(false);
+      }
     }
   }, [editProduct, isOpen]);
 
@@ -92,6 +165,18 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
     setCollections([]);
     setNewCollectionInput("");
     setTag("");
+    
+    // Clear variants
+    setShowVariantsSection(false);
+    setActiveVariantCategory(null);
+    setSizes([]);
+    setColors([]);
+    setTextures([]);
+    setTypes([]);
+    setSizeInput("");
+    setColorInput("");
+    setTextureInput("");
+    setTypeInput("");
   };
 
   const handleAddCollection = (e?: React.KeyboardEvent | React.MouseEvent) => {
@@ -198,7 +283,11 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
         collections,
         tag: isPreorder ? "Pre-order" : (tag || null),
         image: imageUrl,
-        image_path: imagePath
+        image_path: imagePath,
+        sizes_or_lengths: showVariantsSection ? sizes : [],
+        colors: showVariantsSection ? colors : [],
+        textures: showVariantsSection ? textures : [],
+        types: showVariantsSection ? types : []
       };
 
       if (isEditing) {
@@ -327,6 +416,22 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                       placeholder="0.00"
                       className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground placeholder:text-muted-foreground/50"
                     />
+                    {price && Number(price) > 0 && (
+                      <div className="mt-1 p-4 rounded-xl bg-primary/5 border border-primary/20 text-xs flex flex-col gap-2 shadow-sm">
+                        <div className="flex justify-between items-center text-muted-foreground">
+                          <span className="font-medium">Customer pays (Includes gateway fee):</span>
+                          <span className="font-bold">₦{calculateGrossAmount(Number(price)).toLocaleString()}</span>
+                        </div>
+                        <div className="w-full h-px bg-border" />
+                        <div className="flex justify-between items-center text-primary">
+                          <span className="font-bold">You receive (After GoStore commission):</span>
+                          <span className="font-black text-sm">₦{Math.floor(Number(price) - Math.min(Number(price) * 0.05, 10000)).toLocaleString()}</span>
+                        </div>
+                        {Number(price) >= 200000 && (
+                          <p className="text-[10px] text-primary/70 font-medium">✨ GoStore fee capped at ₦10,000</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -361,7 +466,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                   )}
 
                   {/* Input for new collection */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
                     <input 
                       type="text" 
                       value={newCollectionInput}
@@ -373,12 +478,12 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                         }
                       }}
                       placeholder="e.g. Summer Sale, New Arrivals"
-                      className="flex-1 px-5 py-3 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-sm text-foreground placeholder:text-muted-foreground/50"
+                      className="w-full px-5 py-3 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-sm text-foreground placeholder:text-muted-foreground/50"
                     />
                     <button 
                       type="button" 
                       onClick={handleAddCollection}
-                      className="px-5 rounded-2xl bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all text-sm"
+                      className="w-full py-3 rounded-2xl bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all text-sm cursor-pointer"
                     >
                       Add
                     </button>
@@ -453,6 +558,329 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                     />
                   </div>
                 )}
+
+                {/* Product Variants Section */}
+                <div className="border-t border-border pt-6 mt-2 flex flex-col gap-4">
+                  {!showVariantsSection ? (
+                    <div className="p-6 rounded-2xl border-2 border-dashed border-border bg-card flex flex-col items-center justify-center gap-3 text-center">
+                      
+                      <div>
+                        <h4 className="font-bold text-sm text-foreground">Add Universal Product Variants</h4>
+                        <p className="text-xs text-muted-foreground mt-1 max-w-sm">Does this product have different sizes/lengths, colors, textures, or types?</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowVariantsSection(true)}
+                        className="px-5 py-3 rounded-2xl border border-primary/20 hover:border-primary/50 bg-primary/5 text-primary text-xs font-black transition-all hover:bg-primary/10 cursor-pointer shadow-sm"
+                      >
+                        Add Variants
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-5 rounded-[24px] border border-border bg-card/50 flex flex-col gap-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-black text-sm text-foreground">Universal Variants</h4>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">Select a category and add options one by one.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toast("Disable Variants?", {
+                              description: "Are you sure? Any added variants will be cleared.",
+                              action: {
+                                label: "Disable",
+                                onClick: () => {
+                                  setShowVariantsSection(false);
+                                  setSizes([]);
+                                  setColors([]);
+                                  setTextures([]);
+                                  setTypes([]);
+                                  setActiveVariantCategory(null);
+                                  toast.success("Variants disabled");
+                                }
+                              },
+                              cancel: {
+                                label: "Cancel",
+                                onClick: () => {}
+                              }
+                            });
+                          }}
+                          className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 rounded-xl transition-colors cursor-pointer"
+                          title="Disable Variants"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Category Selection Buttons */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { key: "size", label: "Size/Length" },
+                          { key: "color", label: "Color" },
+                          { key: "texture", label: "Texture" },
+                          { key: "type", label: "Type" }
+                        ].map((cat) => (
+                          <button
+                            key={cat.key}
+                            type="button"
+                            onClick={() => setActiveVariantCategory(cat.key)}
+                            className={cn(
+                              "px-3 py-3 rounded-xl border font-bold text-xs transition-all uppercase tracking-wider text-center flex items-center justify-center gap-1.5 cursor-pointer",
+                              activeVariantCategory === cat.key
+                                ? "bg-primary border-primary text-primary-foreground shadow-md"
+                                : "bg-muted border-border text-muted-foreground hover:border-muted-foreground/30"
+                            )}
+                          >
+                            <span>+ {cat.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Active Input Fields */}
+                      <AnimatePresence mode="wait">
+                        {activeVariantCategory === "size" && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex flex-col gap-2 p-4 bg-muted/30 rounded-2xl border border-border"
+                          >
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                              Add Size/Length option
+                            </label>
+                            <div className="flex flex-col gap-2">
+                              <input
+                                type="text"
+                                value={sizeInput}
+                                onChange={(e) => setSizeInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleAddSize();
+                                  }
+                                }}
+                                placeholder="e.g. M, L, XL or 12 inches, 16 inches"
+                                className="w-full px-4 py-2.5 rounded-xl bg-muted border border-border focus:border-primary/50 outline-none text-xs font-bold text-foreground placeholder:text-muted-foreground/30"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddSize}
+                                className="w-full py-2.5 rounded-xl bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all text-xs cursor-pointer"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {activeVariantCategory === "color" && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex flex-col gap-2 p-4 bg-muted/30 rounded-2xl border border-border"
+                          >
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                              Add Color option
+                            </label>
+                            <div className="flex flex-col gap-2">
+                              <input
+                                type="text"
+                                value={colorInput}
+                                onChange={(e) => setColorInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleAddColor();
+                                  }
+                                }}
+                                placeholder="e.g. Black, Burgundy, Ash"
+                                className="w-full px-4 py-2.5 rounded-xl bg-muted border border-border focus:border-primary/50 outline-none text-xs font-bold text-foreground placeholder:text-muted-foreground/30"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddColor}
+                                className="w-full py-2.5 rounded-xl bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all text-xs cursor-pointer"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {activeVariantCategory === "texture" && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex flex-col gap-2 p-4 bg-muted/30 rounded-2xl border border-border"
+                          >
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                              Add Texture option
+                            </label>
+                            <div className="flex flex-col gap-2">
+                              <input
+                                type="text"
+                                value={textureInput}
+                                onChange={(e) => setTextureInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleAddTexture();
+                                  }
+                                }}
+                                placeholder="e.g. Straight, Bouncy Curls, Suede"
+                                className="w-full px-4 py-2.5 rounded-xl bg-muted border border-border focus:border-primary/50 outline-none text-xs font-bold text-foreground placeholder:text-muted-foreground/30"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddTexture}
+                                className="w-full py-2.5 rounded-xl bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all text-xs cursor-pointer"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {activeVariantCategory === "type" && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex flex-col gap-2 p-4 bg-muted/30 rounded-2xl border border-border"
+                          >
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                              Add Type option
+                            </label>
+                            <div className="flex flex-col gap-2">
+                              <input
+                                type="text"
+                                value={typeInput}
+                                onChange={(e) => setTypeInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleAddType();
+                                  }
+                                }}
+                                placeholder="e.g. Frontal, Closure, Vintage Tee"
+                                className="w-full px-4 py-2.5 rounded-xl bg-muted border border-border focus:border-primary/50 outline-none text-xs font-bold text-foreground placeholder:text-muted-foreground/30"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddType}
+                                className="w-full py-2.5 rounded-xl bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all text-xs cursor-pointer"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Display Added Options */}
+                      <div className="flex flex-col gap-4 mt-2">
+                        {/* Sizes */}
+                        {sizes.length > 0 && (
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Sizes / Lengths</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {sizes.map((s) => (
+                                <span
+                                  key={s}
+                                  className="px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold rounded-lg flex items-center gap-1"
+                                >
+                                  {s}
+                                  <button
+                                    type="button"
+                                    onClick={() => setSizes(sizes.filter((x) => x !== s))}
+                                    className="hover:opacity-70 transition-opacity ml-0.5 text-[10px] cursor-pointer"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Colors */}
+                        {colors.length > 0 && (
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Colors</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {colors.map((c) => (
+                                <span
+                                  key={c}
+                                  className="px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold rounded-lg flex items-center gap-1"
+                                >
+                                  {c}
+                                  <button
+                                    type="button"
+                                    onClick={() => setColors(colors.filter((x) => x !== c))}
+                                    className="hover:opacity-70 transition-opacity ml-0.5 text-[10px] cursor-pointer"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Textures */}
+                        {textures.length > 0 && (
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Textures</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {textures.map((t) => (
+                                <span
+                                  key={t}
+                                  className="px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold rounded-lg flex items-center gap-1"
+                                >
+                                  {t}
+                                  <button
+                                    type="button"
+                                    onClick={() => setTextures(textures.filter((x) => x !== t))}
+                                    className="hover:opacity-70 transition-opacity ml-0.5 text-[10px] cursor-pointer"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Types */}
+                        {types.length > 0 && (
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Types</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {types.map((tp) => (
+                                <span
+                                  key={tp}
+                                  className="px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold rounded-lg flex items-center gap-1"
+                                >
+                                  {tp}
+                                  <button
+                                    type="button"
+                                    onClick={() => setTypes(types.filter((x) => x !== tp))}
+                                    className="hover:opacity-70 transition-opacity ml-0.5 text-[10px] cursor-pointer"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

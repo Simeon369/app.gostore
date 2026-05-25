@@ -178,19 +178,19 @@ export function ManageCollectionsModal({
             </div>
 
             {/* Input form to add a new collection */}
-            <form onSubmit={handleAddCollection} className="flex gap-2">
+            <form onSubmit={handleAddCollection} className="flex flex-col gap-2">
               <input
                 type="text"
                 placeholder="New collection name (e.g. Summer wear)"
                 value={newCollectionInput}
                 onChange={(e) => setNewCollectionInput(e.target.value)}
                 disabled={loading}
-                className="flex-1 px-4 py-3 rounded-2xl bg-muted border border-border focus:border-primary/50 text-foreground text-sm outline-none transition-all placeholder:text-muted-foreground/45"
+                className="w-full px-4 py-3 rounded-2xl bg-muted border border-border focus:border-primary/50 text-foreground text-sm outline-none transition-all placeholder:text-muted-foreground/45"
               />
               <button
                 type="submit"
                 disabled={loading || !newCollectionInput.trim()}
-                className="px-5 py-3 rounded-2xl brand-gradient text-primary-foreground font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_15px_rgba(158,226,55,0.15)] disabled:opacity-40"
+                className="w-full justify-center py-3 rounded-2xl brand-gradient text-primary-foreground font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_15px_rgba(158,226,55,0.15)] disabled:opacity-40"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Add

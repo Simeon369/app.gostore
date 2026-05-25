@@ -11,7 +11,8 @@ import {
   LogOut,
   Package,
   ExternalLink,
-  Store
+  Store,
+  ShieldCheck
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { createClient } from "../../utils/supabase/client";
@@ -90,6 +91,17 @@ export function Sidebar({ user, store, onNavigate }: { user: any; store: any; on
           <ExternalLink className="w-5 h-5" />
           View Store
         </Link>
+
+        {user?.email === "gostoreng@gmail.com" && (
+          <Link
+            href="/admin"
+            onClick={onNavigate}
+            className="flex items-center gap-3 px-4 py-3 mt-2 rounded-2xl transition-all font-bold text-[15px] border text-white bg-zinc-900 border-zinc-800 hover:bg-black group shadow-lg"
+          >
+            <ShieldCheck className="w-5 h-5 text-amber-500" />
+            Super Admin
+          </Link>
+        )}
       </div>
 
 

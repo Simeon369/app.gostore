@@ -2,28 +2,23 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function createClient() {
+  const token = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const cookieStore = await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    token,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
+        // Return an array of { name, value } objects. If Next.js provides a getAll method, use it; otherwise return []
+        getAll: () => {
+          const all = (cookieStore as any).getAll?.() ?? []
+          return all.map((c: any) => ({ name: c.name ?? '', value: c.value }))
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-      },
+        // Supabase may try to set auth cookies, but we don't need them in the admin context.
+        // Provide a no‑op implementation to satisfy the type checker.
+        setAll: () => {}
+      }
     }
   )
 }

@@ -63,3 +63,28 @@ export async function verifyPaystackTransaction(reference: string) {
   }
   return data.data; // Full transaction object
 }
+
+export async function initializePaystackTransaction(payload: {
+  amount: number;
+  email: string;
+  reference: string;
+  callback_url: string;
+  subaccount: string;
+  metadata?: any;
+  split?: any;
+}) {
+  const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  
+  const data = await response.json();
+  if (!data.status) {
+    throw new Error(data.message || "Failed to initialize Paystack transaction");
+  }
+  return data.data; // { authorization_url, access_code, reference }
+}

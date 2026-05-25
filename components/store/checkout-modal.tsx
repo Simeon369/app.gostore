@@ -76,7 +76,17 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
           customer_name: customerName,
           customer_phone: customerPhone,
           customer_address: customerAddress,
-          items: JSON.stringify([{ productId: product.id, quantity: 1, price: product.price }]),
+          items: JSON.stringify([{ 
+            productId: product.id, 
+            quantity: 1, 
+            price: product.price,
+            variants: {
+              size_or_length: product.selectedSize || undefined,
+              color: product.selectedColor || undefined,
+              texture: product.selectedTexture || undefined,
+              type: product.selectedType || undefined
+            }
+          }]),
           total: checkoutTotal,
           delivery_fee: deliveryFee,
           source: new URLSearchParams(window.location.search).get('source') || 'Direct'
@@ -128,6 +138,32 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
             <div className="flex flex-col justify-center gap-1">
               <h3 className="font-bold text-sm leading-tight">{product.name}</h3>
               <p className="text-primary font-black">₦{Number(product.price).toLocaleString()}</p>
+              
+              {/* Show Selected Variations */}
+              {(product.selectedSize || product.selectedColor || product.selectedTexture || product.selectedType) && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {product.selectedSize && (
+                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-zinc-400">
+                      Size: {product.selectedSize}
+                    </span>
+                  )}
+                  {product.selectedColor && (
+                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-zinc-400">
+                      Color: {product.selectedColor}
+                    </span>
+                  )}
+                  {product.selectedTexture && (
+                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-zinc-400">
+                      Texture: {product.selectedTexture}
+                    </span>
+                  )}
+                  {product.selectedType && (
+                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-zinc-400">
+                      Type: {product.selectedType}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
