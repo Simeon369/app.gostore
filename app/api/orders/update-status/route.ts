@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       
       try {
         await resend.emails.send({
-          from: 'GoStore <updates@gostore.com>', // Replace with verified domain
+          from: 'GoStore <onboarding@resend.dev>', // Use Resend testing domain
           to: order.customer_email,
           subject: `Your order from ${order.stores.name} has been shipped!`,
           html: `
