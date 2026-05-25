@@ -5,12 +5,46 @@ import { Search, Filter, Phone, MapPin, User, ExternalLink, MoreVertical, Copy, 
 import { useState } from "react";
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const supabase = createClient();
+  const queryClient = useQueryClient();
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  const updateOrderStatus = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+      const res = await fetch('/api/orders/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to update order status');
+      }
+      return res.json();
+    },
+    onMutate: ({ orderId }) => {
+      setUpdatingOrderId(orderId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success("Order marked as shipped!");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+    onSettled: () => {
+      setUpdatingOrderId(null);
+    }
+  });
+
+  const handleShipOrder = (orderId: string) => {
+    updateOrderStatus.mutate({ orderId, status: 'Shipped' });
+  };
 
   const { data: ordersData, isLoading } = useQuery({
     queryKey: ['orders'],
@@ -225,9 +259,20 @@ export default function OrdersPage() {
 
             {/* Actions */}
             <div className="flex gap-3">
-              <button className="flex-1 sm:flex-none px-6 py-3 rounded-2xl glass-card hover:bg-muted transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-foreground">
-                <ExternalLink className="w-4 h-4" /> Ship Order
-              </button>
+              {order.status !== "Shipped" && (
+                <button 
+                  onClick={() => handleShipOrder(order.id)}
+                  disabled={updatingOrderId === order.id}
+                  className="flex-1 sm:flex-none px-6 py-3 rounded-2xl brand-gradient hover:opacity-90 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-primary-foreground disabled:opacity-50"
+                >
+                  {updatingOrderId === order.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="w-4 h-4" /> 
+                  )}
+                  {updatingOrderId === order.id ? "Shipping..." : "Ship Order"}
+                </button>
+              )}
               <button className="p-3 rounded-2xl glass-card hover:bg-muted transition-all flex items-center justify-center">
                 <MoreVertical className="w-4 h-4 text-muted-foreground" />
               </button>

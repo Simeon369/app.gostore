@@ -75,6 +75,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
           store_id: store.id,
           customer_name: customerName,
           customer_phone: customerPhone,
+          customer_email: customerEmail,
           customer_address: customerAddress,
           items: JSON.stringify([{ 
             productId: product.id, 

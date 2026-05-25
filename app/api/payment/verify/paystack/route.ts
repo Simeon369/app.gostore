@@ -46,6 +46,7 @@ export async function GET(req: Request) {
         store_id: storeId,
         customer_name: metadata.customer_name,
         customer_phone: metadata.customer_phone,
+        customer_email: metadata.customer_email || null,
         customer_address: metadata.customer_address,
         items: JSON.parse(metadata.items),
         total: metadata.total,
