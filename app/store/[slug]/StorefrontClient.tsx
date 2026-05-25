@@ -39,6 +39,9 @@ export default function StorefrontClient() {
   const slug = params.slug as string;
   const supabase = createClient();
 
+  const queryString = searchParams.toString();
+  const querySuffix = queryString ? `?${queryString}` : '';
+
   useEffect(() => {
     // Check if script already exists
     if (document.querySelector('script[src="https://sdk.monnify.com/plugin/monnify.js"]')) {
@@ -68,16 +71,37 @@ export default function StorefrontClient() {
         .select('*')
         .eq('store_id', store.id);
 
-      // 3. Increment visits (Fire and forget)
-      const viewSource = searchParams.get('source') || 'Direct';
-      supabase.rpc('increment_store_visits', { store_id: store.id, view_source: viewSource }).then();
-
       return { store, products: products || [] };
     }
   });
 
   const [verifying, setVerifying] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Accurate session-based store views tracking
+  useEffect(() => {
+    if (storeData?.store?.id) {
+      const trackView = async () => {
+        const storeId = storeData.store.id;
+        const sessionKey = `visited_store_${storeId}`;
+        
+        if (!sessionStorage.getItem(sessionKey)) {
+          // Check if current user is owner or super admin
+          const { data: { user } } = await supabase.auth.getUser();
+          const isOwner = user?.id === storeData.store.user_id;
+          const isSuperAdmin = user?.email === 'gostoreng@gmail.com';
+
+          if (!isOwner && !isSuperAdmin) {
+            const viewSource = searchParams.get('src') || searchParams.get('source') || 'Direct';
+            supabase.rpc('increment_store_visits', { store_id: storeId, view_source: viewSource }).then();
+          }
+          sessionStorage.setItem(sessionKey, 'true');
+        }
+      };
+      
+      trackView();
+    }
+  }, [storeData?.store?.id, searchParams, supabase]);
 
   useEffect(() => {
     if (showSuccess) {
@@ -349,7 +373,7 @@ export default function StorefrontClient() {
                 className="relative aspect-square rounded-[20px] overflow-hidden group  bg-zinc-900 transition-all duration-300"
               >
                 {/* Clickable Card link */}
-                <Link href={`/store/${slug}/product/${product.id}`} className="absolute inset-0 z-10" />
+                <Link href={`/store/${slug}/product/${product.id}${querySuffix}`} className="absolute inset-0 z-10" />
 
                 {/* Product Image */}
                 {product.image ? (
@@ -357,6 +381,8 @@ export default function StorefrontClient() {
                     src={product.image} 
                     alt={product.name} 
                     fill 
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    priority={i < 4}
                     className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out z-0"
                   />
                 ) : (

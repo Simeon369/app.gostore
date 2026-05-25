@@ -42,6 +42,9 @@ export default function ProductDetailsClient() {
   const productId = params.productId as string;
   const supabase = createClient();
 
+  const queryString = searchParams.toString();
+  const querySuffix = queryString ? `?${queryString}` : '';
+
   const [verifying, setVerifying] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [checkoutProduct, setCheckoutProduct] = useState<any>(null);
@@ -100,13 +103,34 @@ export default function ProductDetailsClient() {
 
       if (productError || !product || product.tag === 'Archived' || product.tag === 'Deleted') return { store, product: null };
 
-      // 3. Increment visits (with dynamic source tracking)
-      const viewSource = searchParams.get('source') || 'Direct';
-      supabase.rpc('increment_store_visits', { store_id: store.id, view_source: viewSource }).then();
-
       return { store, product };
     }
   });
+
+  // Accurate session-based store views tracking
+  useEffect(() => {
+    if (storeData?.store?.id) {
+      const trackView = async () => {
+        const storeId = storeData.store.id;
+        const sessionKey = `visited_store_${storeId}`;
+        
+        if (!sessionStorage.getItem(sessionKey)) {
+          // Check if current user is owner or super admin
+          const { data: { user } } = await supabase.auth.getUser();
+          const isOwner = user?.id === storeData.store.user_id;
+          const isSuperAdmin = user?.email === 'gostoreng@gmail.com';
+
+          if (!isOwner && !isSuperAdmin) {
+            const viewSource = searchParams.get('src') || searchParams.get('source') || 'Direct';
+            supabase.rpc('increment_store_visits', { store_id: storeId, view_source: viewSource }).then();
+          }
+          sessionStorage.setItem(sessionKey, 'true');
+        }
+      };
+      
+      trackView();
+    }
+  }, [storeData?.store?.id, searchParams, supabase]);
 
   useEffect(() => {
     const paymentRef = searchParams.get('ref');
@@ -176,7 +200,7 @@ export default function ProductDetailsClient() {
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-4">
         <h1 className="text-2xl font-black text-foreground">Product Not Found</h1>
         <p className="text-muted-foreground text-sm max-w-sm">This item may have been removed or is no longer available.</p>
-        <Link href={`/store/${slug}`} className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold transition-all hover:scale-105">
+        <Link href={`/store/${slug}${querySuffix}`} className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold transition-all hover:scale-105">
           Back to Shop
         </Link>
       </div>
@@ -278,7 +302,7 @@ export default function ProductDetailsClient() {
       <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-md border-b border-border px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <Link 
-            href={`/store/${slug}`} 
+            href={`/store/${slug}${querySuffix}`} 
             className="flex items-center gap-2 text-xs md:text-sm font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -290,7 +314,7 @@ export default function ProductDetailsClient() {
             <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full border border-border">
               {store.logo && (
                 <div className="w-5 h-5 rounded-full overflow-hidden relative">
-                  <Image src={store.logo} alt={store.name} fill className="object-cover" />
+                  <Image src={store.logo} alt={store.name} fill sizes="20px" className="object-cover" />
                 </div>
               )}
               <span className="text-[10px] font-bold text-foreground max-w-[100px] truncate">{store.name}</span>
@@ -313,6 +337,7 @@ export default function ProductDetailsClient() {
                 src={product.image} 
                 alt={product.name} 
                 fill 
+                sizes="(max-width: 768px) 100vw, 50vw"
                 priority
                 className="object-cover"
               />
