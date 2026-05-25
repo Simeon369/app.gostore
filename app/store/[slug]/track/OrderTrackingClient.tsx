@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, Package, Truck, CheckCircle2, ArrowLeft, Store, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSearchParams, useParams } from "next/navigation";
