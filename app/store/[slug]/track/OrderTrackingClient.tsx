@@ -9,6 +9,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import Image from "next/image";
+import { cn } from "@/utils/cn";
 
 export default function OrderTrackingClient() {
   const params = useParams();
