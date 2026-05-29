@@ -42,7 +42,7 @@ export default function OrderTrackingClient() {
       const { data: order, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('id', activeSearchId)
+        .ilike('id', `${activeSearchId}%`)
         .eq('store_id', storeData.id)
         .single();
         
@@ -152,7 +152,7 @@ export default function OrderTrackingClient() {
                   <div className="flex justify-between items-start mb-8 border-b border-border pb-6">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Order ID</p>
-                      <p className="text-sm font-bold text-foreground">{orderData.id}</p>
+                      <p className="text-sm font-bold text-foreground uppercase">{orderData.id.split('-')[0]}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Date</p>

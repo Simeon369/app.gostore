@@ -149,7 +149,7 @@ export default function OrdersPage() {
             {/* Order Identity & Status */}
             <div className="flex flex-col gap-3 border-b border-border pb-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{order.id}</span>
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{order.id.split('-')[0]}</span>
                 <div className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
                   order.status === "Paid" ? "bg-emerald-500/10 text-emerald-400" : 

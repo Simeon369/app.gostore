@@ -48,7 +48,8 @@ export async function POST(req: Request) {
 
     // 4. Send Email if status is "Shipped" and customer email is available
     if (status === 'Shipped' && order.customer_email) {
-      const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/store/${order.stores.slug}/track?orderId=${order.id}`;
+      const shortId = order.id.split('-')[0].toUpperCase();
+      const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/store/${order.stores.slug}/track?orderId=${shortId}`;
       
       try {
         await resend.emails.send({
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
           html: `
             <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
               <h1 style="color: #333;">Great news, ${order.customer_name}!</h1>
-              <p>Your recent order (<strong>#${order.id}</strong>) from <strong>${order.stores.name}</strong> is now on its way.</p>
+              <p>Your recent order (<strong>#${shortId}</strong>) from <strong>${order.stores.name}</strong> is now on its way.</p>
               <div style="margin: 30px 0;">
                 <a href="${trackingUrl}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
                   Track Your Order
