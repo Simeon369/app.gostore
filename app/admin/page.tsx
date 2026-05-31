@@ -10,22 +10,22 @@ export default async function AdminOverviewPage() {
     supabase.from("waitlist").select("*", { count: "exact", head: true }),
     supabase.from("stores").select("*", { count: "exact", head: true }),
     supabase.from("products").select("*", { count: "exact", head: true }),
-    supabase.from("orders").select("*", { count: "exact", head: true })
+    supabase.from("orders").select("*", { count: "exact", head: true }),
   ]);
 
-  const [
-    waitlistCount,
-    storeCount,
-    productCount,
-    orderCount
-  ] = results.map((result, index) => {
-    if (result.status === "fulfilled") {
-      return result.value.count || 0;
-    }
+  const [waitlistCount, storeCount, productCount, orderCount] = results.map(
+    (result, index) => {
+      if (result.status === "fulfilled") {
+        return result.value.count || 0;
+      }
 
-    console.error(`Admin stats query failed for index ${index}:`, result.reason);
-    return 0;
-  });
+      console.error(
+        `Admin stats query failed for index ${index}:`,
+        result.reason,
+      );
+      return 0;
+    },
+  );
 
   const stats = [
     {
@@ -65,7 +65,9 @@ export default async function AdminOverviewPage() {
   return (
     <div className="flex flex-col gap-8 max-w-6xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Platform Overview</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Platform Overview
+        </h1>
         <p className="text-muted-foreground text-sm mt-1">
           A high-level view of GoStore's performance and growth.
         </p>
@@ -77,13 +79,19 @@ export default async function AdminOverviewPage() {
           <Link href={stat.href} key={stat.name} className="block">
             <div className="p-6 rounded-[24px] bg-card border border-border flex flex-col gap-4 hover:shadow-lg hover:-translate-y-1 transition-all">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-muted-foreground">{stat.name}</p>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.bg}`}>
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {stat.name}
+                </p>
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.bg}`}
+                >
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
               </div>
               <div className="flex items-end justify-between">
-                <h3 className="text-4xl font-bold tracking-tight text-foreground">{stat.value.toLocaleString()}</h3>
+                <h3 className="text-4xl font-bold tracking-tight text-foreground">
+                  {stat.value.toLocaleString()}
+                </h3>
               </div>
             </div>
           </Link>
