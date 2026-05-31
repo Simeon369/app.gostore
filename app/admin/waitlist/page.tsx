@@ -1,8 +1,16 @@
 import { createAdminClient } from "../../../utils/supabase/admin";
 import { formatDistanceToNow } from "date-fns";
+import { redirect } from "next/navigation";
 
 export default async function AdminWaitlistPage() {
-  const supabase = createAdminClient();
+  let supabase;
+
+  try {
+    supabase = createAdminClient();
+  } catch (error) {
+    console.error("Admin waitlist init error:", error);
+    redirect("/dashboard");
+  }
 
   // Fetch waitlist entries with explicit columns
   const { data: waitlist, error } = await supabase
@@ -36,15 +44,26 @@ export default async function AdminWaitlistPage() {
             <tbody className="divide-y divide-border">
               {waitlist && waitlist.length > 0 ? (
                 waitlist.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-muted/50 transition-colors">
+                  <tr
+                    key={entry.id}
+                    className="hover:bg-muted/50 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-foreground">+{entry.phone}</span>
-                        <span className="text-xs text-muted-foreground">{entry.email}</span>
+                        <span className="font-semibold text-foreground">
+                          +{entry.phone}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {entry.email}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
-                      {entry.created_at ? formatDistanceToNow(new Date(entry.created_at), { addSuffix: true }) : "‑"}
+                      {entry.created_at
+                        ? formatDistanceToNow(new Date(entry.created_at), {
+                            addSuffix: true,
+                          })
+                        : "‑"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <a
@@ -60,7 +79,10 @@ export default async function AdminWaitlistPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={3}
+                    className="px-6 py-8 text-center text-muted-foreground"
+                  >
                     No waitlist entries found.
                   </td>
                 </tr>

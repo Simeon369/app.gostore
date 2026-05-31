@@ -1,9 +1,17 @@
 import { createAdminClient } from "../../utils/supabase/admin";
 import { Users2, Store, Package, DollarSign } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default async function AdminOverviewPage() {
-  const supabase = createAdminClient();
+  let supabase;
+
+  try {
+    supabase = createAdminClient();
+  } catch (error) {
+    console.error("Admin overview init error:", error);
+    redirect("/dashboard");
+  }
 
   // Fetch counts in parallel and avoid failing the page when one query errors
   const results = await Promise.allSettled([
