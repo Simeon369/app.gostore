@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { AdminSidebar } from "../../components/admin/sidebar";
 import { AdminHeader } from "../../components/admin/header";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({
   children,
 }: {
@@ -28,7 +30,14 @@ export default async function AdminLayout({
   const allowedEmail = process.env.SUPER_ADMIN_EMAIL?.toLowerCase();
   const userEmail = user?.email?.toLowerCase();
 
-  if (!user || !allowedEmail || userEmail !== allowedEmail) {
+  if (!allowedEmail) {
+    console.error(
+      "SUPER_ADMIN_EMAIL is not set in the production environment.",
+    );
+    redirect("/dashboard");
+  }
+
+  if (!user || userEmail !== allowedEmail) {
     redirect("/dashboard");
   }
 
