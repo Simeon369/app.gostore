@@ -8,11 +8,27 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
 
-  // Basic security check: user must be logged in and match the super admin email
-  if (!user || user.email !== process.env.SUPER_ADMIN_EMAIL) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error) {
+      console.error("Admin layout auth error:", error);
+      redirect("/login");
+    }
+
+    user = data.user;
+  } catch (error) {
+    console.error("Admin layout error:", error);
+    redirect("/login");
+  }
+
+  const allowedEmail = process.env.SUPER_ADMIN_EMAIL?.toLowerCase();
+  const userEmail = user?.email?.toLowerCase();
+
+  if (!user || !allowedEmail || userEmail !== allowedEmail) {
     redirect("/dashboard");
   }
 

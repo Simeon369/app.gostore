@@ -5,18 +5,27 @@ import Link from "next/link";
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
 
-  // Fetch counts in parallel
-  const [
-    { count: waitlistCount },
-    { count: storeCount },
-    { count: productCount },
-    { count: orderCount }
-  ] = await Promise.all([
+  // Fetch counts in parallel and avoid failing the page when one query errors
+  const results = await Promise.allSettled([
     supabase.from("waitlist").select("*", { count: "exact", head: true }),
     supabase.from("stores").select("*", { count: "exact", head: true }),
     supabase.from("products").select("*", { count: "exact", head: true }),
     supabase.from("orders").select("*", { count: "exact", head: true })
   ]);
+
+  const [
+    waitlistCount,
+    storeCount,
+    productCount,
+    orderCount
+  ] = results.map((result, index) => {
+    if (result.status === "fulfilled") {
+      return result.value.count || 0;
+    }
+
+    console.error(`Admin stats query failed for index ${index}:`, result.reason);
+    return 0;
+  });
 
   const stats = [
     {
