@@ -2,17 +2,17 @@
 
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { 
+import {
   Store,
-  ShoppingBag, 
-  MessageCircle, 
+  ShoppingBag,
+  MessageCircle,
   ArrowLeft,
   Search,
   ExternalLink,
   ChevronRight,
   Loader2,
   CheckCircle2,
-  Share2
+  Share2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Instagram, TikTok } from "../../../components/icons";
@@ -26,11 +26,11 @@ import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 const formatWhatsAppNumber = (phone: string): string => {
-  let clean = phone.replace(/\D/g, '');
-  if (clean.startsWith('234')) return clean;
-  if (clean.startsWith('0')) return '234' + clean.slice(1);
-  if (!clean) return '';
-  return '234' + clean;
+  let clean = phone.replace(/\D/g, "");
+  if (clean.startsWith("234")) return clean;
+  if (clean.startsWith("0")) return "234" + clean.slice(1);
+  if (!clean) return "";
+  return "234" + clean;
 };
 
 export default function StorefrontClient() {
@@ -40,39 +40,43 @@ export default function StorefrontClient() {
   const supabase = createClient();
 
   const queryString = searchParams.toString();
-  const querySuffix = queryString ? `?${queryString}` : '';
+  const querySuffix = queryString ? `?${queryString}` : "";
 
   useEffect(() => {
     // Check if script already exists
-    if (document.querySelector('script[src="https://sdk.monnify.com/plugin/monnify.js"]')) {
+    if (
+      document.querySelector(
+        'script[src="https://sdk.monnify.com/plugin/monnify.js"]',
+      )
+    ) {
       return;
     }
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = "https://sdk.monnify.com/plugin/monnify.js";
     script.async = true;
     document.body.appendChild(script);
   }, []);
-  
+
   const { data: storeData, isLoading } = useQuery({
-    queryKey: ['store', slug],
+    queryKey: ["store", slug],
     queryFn: async () => {
       // 1. Fetch store by slug
       const { data: store, error: storeError } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('slug', slug)
+        .from("stores")
+        .select("*")
+        .eq("slug", slug)
         .single();
 
       if (storeError || !store) return null;
 
       // 2. Fetch products for this store
       const { data: products } = await supabase
-        .from('products')
-        .select('*')
-        .eq('store_id', store.id);
+        .from("products")
+        .select("*")
+        .eq("store_id", store.id);
 
       return { store, products: products || [] };
-    }
+    },
   });
 
   const [verifying, setVerifying] = useState(false);
@@ -84,21 +88,29 @@ export default function StorefrontClient() {
       const trackView = async () => {
         const storeId = storeData.store.id;
         const sessionKey = `visited_store_${storeId}`;
-        
+
         if (!sessionStorage.getItem(sessionKey)) {
           // Check if current user is owner or super admin
-          const { data: { user } } = await supabase.auth.getUser();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
           const isOwner = user?.id === storeData.store.user_id;
-          const isSuperAdmin = user?.email === 'gostoreng@gmail.com';
+          const isSuperAdmin = user?.email === "gostoreng@gmail.com";
 
           if (!isOwner && !isSuperAdmin) {
-            const viewSource = searchParams.get('src') || searchParams.get('source') || 'Direct';
-            supabase.rpc('increment_store_visits', { store_id: storeId, view_source: viewSource }).then();
+            const viewSource =
+              searchParams.get("src") || searchParams.get("source") || "Direct";
+            supabase
+              .rpc("increment_store_visits", {
+                store_id: storeId,
+                view_source: viewSource,
+              })
+              .then();
           }
-          sessionStorage.setItem(sessionKey, 'true');
+          sessionStorage.setItem(sessionKey, "true");
         }
       };
-      
+
       trackView();
     }
   }, [storeData?.store?.id, searchParams, supabase]);
@@ -111,19 +123,19 @@ export default function StorefrontClient() {
   }, [showSuccess]);
 
   useEffect(() => {
-    const paymentRef = searchParams.get('ref');
-    const success = searchParams.get('success');
+    const paymentRef = searchParams.get("ref");
+    const success = searchParams.get("success");
 
-    if (success === 'true') {
+    if (success === "true") {
       if (paymentRef) {
         const verifyPayment = async () => {
           setVerifying(true);
           try {
             const res = await fetch(`/api/payment/verify?ref=${paymentRef}`);
             const data = await res.json();
-            if (data.status === 'success' || data.status === 'already_exists') {
+            if (data.status === "success" || data.status === "already_exists") {
               setShowSuccess(true);
-              window.history.replaceState({}, '', window.location.pathname);
+              window.history.replaceState({}, "", window.location.pathname);
             }
           } catch (err) {
             console.error("Verification failed:", err);
@@ -135,7 +147,7 @@ export default function StorefrontClient() {
       } else {
         // Already verified by popup
         setShowSuccess(true);
-        window.history.replaceState({}, '', window.location.pathname);
+        window.history.replaceState({}, "", window.location.pathname);
       }
     }
   }, [searchParams]);
@@ -154,14 +166,18 @@ export default function StorefrontClient() {
     if (!storeData?.store) return;
     const url = window.location.href;
     const title = `${storeData.store.name} | Official Storefront`;
-    const text = storeData.store.description || `Check out ${storeData.store.name} official storefront on GoStore!`;
+    const text =
+      storeData.store.description ||
+      `Check out ${storeData.store.name} official storefront on GoStore!`;
 
     if (navigator.share) {
-      navigator.share({
-        title,
-        text,
-        url
-      }).catch(console.error);
+      navigator
+        .share({
+          title,
+          text,
+          url,
+        })
+        .catch(console.error);
     } else {
       navigator.clipboard.writeText(url);
       toast.success("Store link copied to clipboard!");
@@ -171,32 +187,35 @@ export default function StorefrontClient() {
   const categories = useMemo(() => {
     if (!storeData?.store) return ["All"];
     const cats = new Set<string>();
-    
+
     if (storeData.store.collections) {
       storeData.store.collections.forEach((c: string) => cats.add(c));
     }
-    
+
     if (storeData.products) {
-      storeData.products.forEach(p => {
+      storeData.products.forEach((p) => {
         // Ignore the old hardcoded "Fashion" category
         if (p.category && p.category !== "Fashion") cats.add(p.category);
         if (p.collections) p.collections.forEach((c: string) => cats.add(c));
       });
     }
-    
+
     return ["All", ...Array.from(cats)];
   }, [storeData]);
 
   const filteredProducts = useMemo(() => {
     if (!storeData?.products) return [];
-    return storeData.products.filter(p => {
-      if (p.tag === 'Archived' || p.tag === 'Deleted') return false;
-      
-      const matchesCategory = selectedCategory === "All" || 
-        p.category === selectedCategory || 
+    return storeData.products.filter((p) => {
+      if (p.tag === "Archived" || p.tag === "Deleted") return false;
+
+      const matchesCategory =
+        selectedCategory === "All" ||
+        p.category === selectedCategory ||
         (p.collections && p.collections.includes(selectedCategory));
-        
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesSearch = p.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
   }, [storeData?.products, selectedCategory, searchQuery]);
@@ -205,7 +224,11 @@ export default function StorefrontClient() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        {verifying && <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">Verifying your payment...</p>}
+        {verifying && (
+          <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">
+            Verifying your payment...
+          </p>
+        )}
       </div>
     );
   }
@@ -213,9 +236,16 @@ export default function StorefrontClient() {
   if (!storeData?.store) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4 text-foreground">Store Not Found</h1>
-        <p className="text-muted-foreground mb-8">The link you followed might be broken or the store has been moved.</p>
-        <Link href="/" className="px-6 py-3 brand-gradient text-primary-foreground font-bold rounded-2xl">
+        <h1 className="text-2xl font-bold mb-4 text-foreground">
+          Store Not Found
+        </h1>
+        <p className="text-muted-foreground mb-8">
+          The link you followed might be broken or the store has been moved.
+        </p>
+        <Link
+          href="/"
+          className="px-6 py-3 brand-gradient text-primary-foreground font-bold rounded-2xl"
+        >
           Back to GoStore
         </Link>
       </div>
@@ -223,9 +253,9 @@ export default function StorefrontClient() {
   }
 
   const { store } = storeData;
-  
+
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-24 lg:pb-10">
+    <div className="min-h-screen bg-background flex flex-col pb-20">
       {/* Success Toast */}
       <AnimatePresence>
         {showSuccess && (
@@ -241,129 +271,158 @@ export default function StorefrontClient() {
               </div>
               <div>
                 <p className="font-black text-sm">Order Successful!</p>
-                <p className="text-[10px] font-bold opacity-90 uppercase tracking-widest">Check your email for the receipt.</p>
+                <p className="text-[10px] font-bold opacity-90 uppercase tracking-widest">
+                  Check your email for the receipt.
+                </p>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Dynamic Warm Banner */}
-      <div className="h-32 md:h-48 w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 relative overflow-hidden  border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,158,11,0.06),transparent_50%)]" />
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
-        
-        {/* Floating Theme Toggle */}
-        <div className="absolute top-4 right-4 z-20 bg-background/80 backdrop-blur-md rounded-2xl border border-border p-0.5 shadow-lg">
-          <ThemeToggle />
-        </div>
-      </div>
+      {/* Top Navigation */}
+      <nav className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
+        <div className="px-6 md:px-10 max-w-6xl mx-auto py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/gostore-logo.png"
+              alt="GoStore"
+              width={24}
+              height={24}
+              className="w-6 h-6"
+            />
+            <span className="text-xs font-black uppercase tracking-wider text-primary hidden sm:inline">
+              GoStore
+            </span>
+          </Link>
 
-      {/* Brand Header */}
-      <header className="px-6 md:px-10 -mt-10 md:-mt-16 max-w-5xl mx-auto w-full relative z-10 flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="flex items-end gap-4">
-            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-background p-1.5 shadow-xl border border-border overflow-hidden flex items-center justify-center">
-              {store.logo ? (
-                <Image src={store.logo} alt={store.name} width={112} height={112} className="w-full h-full object-cover rounded-full" />
-              ) : (
-                <div className="w-full h-full rounded-full bg-muted flex items-center justify-center">
-                  <Store className="w-8 h-8 text-muted-foreground" />
-                </div>
-              )}
-            </div>
-            <div className="mb-2">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl md:text-3xl font-black text-foreground">{store.name}</h1>
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Active
-                </span>
-              </div>
-              <p className="text-[10px] md:text-xs text-primary font-bold uppercase tracking-widest mt-1">Official Storefront</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 mb-2">
-            {store.whatsapp && (
-              <a href={`https://wa.me/${formatWhatsAppNumber(store.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all shadow-md">
-                <MessageCircle className="w-4 h-4" />
-                Chat on WhatsApp
-              </a>
-            )}
-            <button 
+          <div className="flex items-center gap-3">
+            <button
               onClick={handleShareStore}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-xs font-bold transition-all shadow-md"
+              className="p-2.5 rounded-xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground transition-all"
+              title="Share Store"
             >
               <Share2 className="w-4 h-4" />
-              Share Store
             </button>
-            {store.socials?.instagram && typeof store.socials.instagram === "string" && (
-              <a href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-muted hover:bg-muted/80 rounded-2xl border border-border text-muted-foreground transition-all">
-                <Instagram className="w-4 h-4" />
-              </a>
-            )}
-            {store.socials?.tiktok && typeof store.socials.tiktok === "string" && (
-              <a href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-muted hover:bg-muted/80 rounded-2xl border border-border text-muted-foreground transition-all">
-                <TikTok className="w-4 h-4" />
-              </a>
-            )}
+            {/* <div className="p-2.5 rounded-xl bg-muted/50 border border-border">
+              <ThemeToggle />
+            </div> */}
           </div>
         </div>
+      </nav>
 
+      {/* Store Hero Section */}
+      <section className="px-6 md:px-10 py-10 md:py-16 max-w-6xl mx-auto w-full flex flex-col items-center gap-6 text-center">
+        {/* Store Logo */}
+        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-background p-1 shadow-xl border border-border overflow-hidden flex items-center justify-center">
+          {store.logo ? (
+            <Image
+              src={store.logo}
+              alt={store.name}
+              width={128}
+              height={128}
+              className="w-full h-full object-cover rounded-full"
+            />
+          ) : (
+            <div className="w-full h-full rounded-full bg-muted flex items-center justify-center">
+              <Store className="w-10 h-10 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+
+        {/* Store Name & Badge */}
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-3xl md:text-4xl font-black text-foreground">
+            {store.name}
+          </h1>
+          {/* <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Now Open
+          </span> */}
+        </div>
+
+        {/* Store Description */}
         {store.description && (
-          <p className="text-muted-foreground text-sm md:text-base leading-relaxed max-w-2xl mt-2">
+          <p className="text-muted-foreground text-sm md:text-base leading-relaxed max-w-2xl">
             {store.description}
           </p>
         )}
 
-        {/* High-Trust Strip */}
-        <div className="flex flex-wrap gap-4 items-center text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest border-t border-b border-border py-4 mt-2">
-          <span className="flex items-center text-[10px] gap-1.5">⚡ Instant Checkout</span>
-          <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-          <span className="flex items-center text-[10px] gap-1.5">🛡️ Secured Payments</span>
-          <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-          <span className="flex items-center text-[10px] gap-1.5">📦 Direct Delivery</span>
-        </div>
-      </header>
+        {/* Action Buttons */}
+        {/* <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          {store.whatsapp && (
+            <a
+              href={`https://wa.me/${formatWhatsAppNumber(store.whatsapp)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all shadow-md"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Chat
+            </a>
+          )}
+          {store.socials?.instagram &&
+            typeof store.socials.instagram === "string" && (
+              <a
+                href={`https://instagram.com/${store.socials.instagram.replace("@", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2.5 rounded-2xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground transition-all"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+            )}
+          {store.socials?.tiktok &&
+            typeof store.socials.tiktok === "string" && (
+              <a
+                href={`https://tiktok.com/@${store.socials.tiktok.replace("@", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2.5 rounded-2xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground transition-all"
+              >
+                <TikTok className="w-4 h-4" />
+              </a>
+            )}
+        </div> */}
+      </section>
 
       {/* Categories & Search */}
-      <section className="px-6 md:px-10 py-6 max-w-5xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Categories pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide no-scrollbar flex-1">
-          {categories.map(cat => (
+      <section className="px-6 md:px-10 py-6 max-w-6xl mx-auto w-full flex flex-col gap-4">
+        {/* Search Input - Full Width */}
+        <div className="relative w-full">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search products..."
+            className="w-full pl-11 pr-4 py-3 rounded-2xl bg-muted border border-border focus:border-primary/50 text-foreground text-sm font-semibold outline-none transition-all"
+          />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        </div>
+
+        {/* Categories pills - Scrollable */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                "px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap transition-all border uppercase tracking-wider",
-                selectedCategory === cat 
-                  ? "bg-primary border-primary text-primary-foreground shadow-lg" 
-                  : "bg-muted border-border text-muted-foreground hover:border-muted-foreground/30"
+                "px-4 py-2 rounded-full text-xs font-black whitespace-nowrap transition-all border uppercase tracking-wider",
+                selectedCategory === cat
+                  ? "bg-primary border-primary text-primary-foreground shadow-lg"
+                  : "bg-muted border-border text-muted-foreground hover:border-muted-foreground/30",
               )}
             >
               {cat}
             </button>
           ))}
         </div>
-
-        {/* Search Input */}
-        <div className="relative w-full sm:w-72">
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search products..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-muted border border-border focus:border-primary/50 text-foreground text-xs font-bold outline-none transition-all"
-          />
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        </div>
       </section>
 
-      {/* Product Grid */}
-      <main className="flex-1 px-6 md:px-10 max-w-5xl mx-auto w-full">
+      {/* Product Grid - 2 Columns Mobile, 4 Columns Desktop */}
+      <main className="flex-1 px-6 md:px-10 max-w-6xl mx-auto w-full py-8">
         {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {filteredProducts.map((product, i) => (
               <motion.div
                 key={product.id}
@@ -373,14 +432,17 @@ export default function StorefrontClient() {
                 className="relative aspect-square rounded-[20px] overflow-hidden group  bg-zinc-900 transition-all duration-300"
               >
                 {/* Clickable Card link */}
-                <Link href={`/store/${slug}/product/${product.id}${querySuffix}`} className="absolute inset-0 z-10" />
+                <Link
+                  href={`/store/${slug}/product/${product.id}${querySuffix}`}
+                  className="absolute inset-0 z-10"
+                />
 
                 {/* Product Image */}
                 {product.image ? (
-                  <Image 
-                    src={product.image} 
-                    alt={product.name} 
-                    fill 
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
                     sizes="(max-width: 768px) 50vw, 33vw"
                     priority={i < 4}
                     className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out z-0"
@@ -393,12 +455,16 @@ export default function StorefrontClient() {
 
                 {/* Dynamic Tag Overlay */}
                 {product.tag && (
-                  <div className={cn(
-                    "absolute top-3 left-3 px-2.5 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest z-20 shadow-lg border border-white/5 backdrop-blur-md",
-                    product.tag === "Sold Out" ? "bg-red-500/80 text-white" : 
-                    product.tag === "Pre-order" ? "bg-orange-500/80 text-white" : 
-                    "bg-primary/80 text-primary-foreground"
-                  )}>
+                  <div
+                    className={cn(
+                      "absolute top-3 left-3 px-2.5 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest z-20 shadow-lg border border-white/5 backdrop-blur-md",
+                      product.tag === "Sold Out"
+                        ? "bg-red-500/80 text-white"
+                        : product.tag === "Pre-order"
+                          ? "bg-orange-500/80 text-white"
+                          : "bg-primary/80 text-primary-foreground",
+                    )}
+                  >
                     {product.tag}
                   </div>
                 )}
@@ -421,7 +487,9 @@ export default function StorefrontClient() {
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
             <ShoppingBag className="w-12 h-12 text-muted-foreground opacity-20" />
-            <p className="text-muted-foreground font-bold">No products found in this category.</p>
+            <p className="text-muted-foreground font-bold">
+              No products found in this category.
+            </p>
           </div>
         )}
       </main>
@@ -429,82 +497,105 @@ export default function StorefrontClient() {
       {/* Floating Checkout Button */}
       <AnimatePresence>
         {checkoutProduct && (
-          <CheckoutModal 
-            product={checkoutProduct} 
-            store={store} 
-            onClose={() => setCheckoutProduct(null)} 
+          <CheckoutModal
+            product={checkoutProduct}
+            store={store}
+            onClose={() => setCheckoutProduct(null)}
           />
         )}
       </AnimatePresence>
 
-      {/* Store Contacts Section */}
-      <section className="max-w-5xl mx-auto w-full px-6 py-8 border-t border-border mt-12">
-        <div className="flex flex-col items-center md:flex-row md:justify-between gap-6 text-center md:text-left">
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Store Contact & Socials</h3>
-            <p className="text-[11px] text-muted-foreground/80 mt-1">Have any questions about products or your order? Reach out directly!</p>
+      {/* Store Contacts & Footer */}
+      <section className="border-t border-border mt-12 py-10">
+        <div className="px-6 md:px-10 max-w-6xl mx-auto w-full flex flex-col gap-8">
+          {/* Contact Section */}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                Get in Touch
+              </h3>
+              <p className="text-[11px] text-muted-foreground/80 max-w-sm">
+                Have questions about a product or your order? Reach out directly
+                to the store.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {store.whatsapp && (
+                <a
+                  href={`https://wa.me/${formatWhatsAppNumber(store.whatsapp)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold transition-all"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  WhatsApp
+                </a>
+              )}
+
+              {store.socials?.email && (
+                <a
+                  href={`mailto:${store.socials.email}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-[10px] font-bold transition-all"
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  Email
+                </a>
+              )}
+
+              {store.socials?.instagram &&
+                typeof store.socials.instagram === "string" && (
+                  <a
+                    href={`https://instagram.com/${store.socials.instagram.replace("@", "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 border border-border text-muted-foreground text-[10px] font-bold transition-all"
+                  >
+                    <Instagram className="w-3.5 h-3.5" />
+                    Instagram
+                  </a>
+                )}
+
+              {store.socials?.tiktok &&
+                typeof store.socials.tiktok === "string" && (
+                  <a
+                    href={`https://tiktok.com/@${store.socials.tiktok.replace("@", "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 border border-border text-muted-foreground text-[10px] font-bold transition-all"
+                  >
+                    <TikTok className="w-3.5 h-3.5" />
+                    TikTok
+                  </a>
+                )}
+            </div>
           </div>
-          
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {store.whatsapp && (
-              <a 
-                href={`https://wa.me/${formatWhatsAppNumber(store.whatsapp)}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400 text-xs font-bold transition-all shadow-sm"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>+{formatWhatsAppNumber(store.whatsapp)}</span>
-              </a>
-            )}
-            
-            {store.socials?.email && (
-              <a 
-                href={`mailto:${store.socials.email}`}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-xs font-bold transition-all shadow-sm"
-              >
-                <Store className="w-4 h-4" />
-                <span>{store.socials.email}</span>
-              </a>
-            )}
 
-            {store.socials?.instagram && typeof store.socials.instagram === "string" && (
-              <a 
-                href={`https://instagram.com/${store.socials.instagram.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground text-xs font-bold transition-all"
-              >
-                <Instagram className="w-4 h-4" />
-                <span>@{store.socials.instagram.replace('@', '')}</span>
-              </a>
-            )}
+          {/* Divider */}
+          <div className="h-px bg-border" />
 
-            {store.socials?.tiktok && typeof store.socials.tiktok === "string" && (
-              <a 
-                href={`https://tiktok.com/@${store.socials.tiktok.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-muted hover:bg-muted/80 border border-border text-muted-foreground text-xs font-bold transition-all"
-              >
-                <TikTok className="w-4 h-4" />
-                <span>@{store.socials.tiktok.replace('@', '')}</span>
-              </a>
-            )}
+          {/* Footer Branding */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div className="flex items-center gap-2 text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
+              <Image
+                src="/gostore-logo.png"
+                alt="GoStore"
+                width={16}
+                height={16}
+                className="w-4 h-4 opacity-60"
+              />
+              Powered by GoStore
+            </div>
+
+            <Link
+              href="/"
+              className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-wider"
+            >
+              Create Your Store in 5 Minutes →
+            </Link>
           </div>
         </div>
       </section>
-
-      {/* Footer Branding */}
-      <footer className="mt-auto py-10 flex flex-col items-center gap-4 text-center border-t border-border">
-        <div className="flex items-center gap-2">
-          <Image src="/gostore-logo.png" alt="GoStore" width={20} height={20} className="w-5 h-5 opacity-50" />
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Powered by GoStore</p>
-        </div>
-        <Link href="/" className="text-xs font-bold text-primary hover:underline">
-          Create your own store in 5 minutes
-        </Link>
-      </footer>
     </div>
   );
 }
