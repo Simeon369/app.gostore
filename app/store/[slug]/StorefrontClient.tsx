@@ -284,13 +284,16 @@ export default function StorefrontClient() {
       <nav className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="px-6 md:px-10 max-w-6xl mx-auto py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image
+          <div className="rounded-full overflow-hidden">
+             <Image
               src="/gostore-logo.png"
               alt="GoStore"
               width={24}
               height={24}
-              className="w-6 h-6"
+              className="w-10 h-10 "
             />
+          </div>
+           
             <span className="text-xs font-black uppercase tracking-wider text-primary hidden sm:inline">
               GoStore
             </span>

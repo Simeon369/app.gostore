@@ -320,9 +320,9 @@ export default function ProductDetailsClient() {
               <span className="text-[10px] font-bold text-foreground max-w-[100px] truncate">{store.name}</span>
             </div>
             
-            <div className="bg-muted/50 rounded-full border border-border p-0.5">
+            {/* <div className="bg-muted/50 rounded-full border border-border p-0.5">
               <ThemeToggle />
-            </div>
+            </div> */}
           </div>
         </div>
       </header>
@@ -685,7 +685,7 @@ export default function ProductDetailsClient() {
                 {product.tag === "Sold Out" ? "Sold Out" : "Buy Now"}
               </button>
 
-              {store.whatsapp && (
+              {/* {store.whatsapp && (
                 <button
                   onClick={handleWhatsAppInquiry}
                   className="py-4 px-6 rounded-[20px] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
@@ -693,7 +693,7 @@ export default function ProductDetailsClient() {
                   <MessageCircle className="w-4 h-4" />
                   Chat on WhatsApp
                 </button>
-              )}
+              )} */}
 
               <button
                 onClick={handleShareProduct}
