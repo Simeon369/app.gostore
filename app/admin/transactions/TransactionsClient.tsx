@@ -35,10 +35,12 @@ interface Order {
   source: string | null;
   created_at: string;
   stores: { name: string; slug: string } | null;
+  whatsapp_sent?: boolean;
   items: Array<{
-    productId: string;
+    productId?: string;
+    name?: string;
     quantity: number;
-    price: number;
+    price?: number;
     variants?: Record<string, string>;
   }>;
 }
@@ -47,13 +49,7 @@ interface TransactionsClientProps {
   orders: Order[];
 }
 
-const statusOptions = [
-  "All",
-  "Paid",
-  "Shipped",
-  "Pending",
-  "Delivered",
-] as const;
+const statusOptions = ["All", "Paid", "Shipped"] as const;
 
 type StatusOption = (typeof statusOptions)[number];
 
@@ -135,6 +131,27 @@ export default function TransactionsClient({
 
     window.open(whatsappLink, "_blank");
     setTimeout(() => setSendingOrderId(null), 600);
+  };
+
+  const handleMarkWhatsAppSent = async (orderId: string) => {
+    try {
+      const res = await fetch("/api/orders/mark-whatsapp-sent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to mark as sent");
+      }
+
+      toast.success("Marked message as sent");
+      window.location.reload();
+    } catch (err: any) {
+      console.error("Mark WhatsApp sent error:", err);
+      toast.error(err?.message || "Unable to mark message as sent");
+    }
   };
 
   return (
@@ -253,19 +270,6 @@ export default function TransactionsClient({
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
-                          onClick={() => handleSendWhatsApp(order)}
-                          disabled={sendingOrderId === order.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors disabled:opacity-50 text-xs font-medium"
-                          title="Send shipping notification via WhatsApp"
-                        >
-                          {sendingOrderId === order.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <MessageCircle className="w-3.5 h-3.5" />
-                          )}
-                          WhatsApp
-                        </button>
-                        <button
                           onClick={() => handleShipOrder(order.id)}
                           disabled={updatingOrderId === order.id}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors disabled:opacity-50 text-xs font-medium"
@@ -304,6 +308,7 @@ export default function TransactionsClient({
                 <th className="px-6 py-4 font-semibold">Fee (5%)</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
                 <th className="px-6 py-4 font-semibold">Date</th>
+                <th className="px-6 py-4 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -346,6 +351,45 @@ export default function TransactionsClient({
                       {formatDistanceToNow(new Date(order.created_at), {
                         addSuffix: true,
                       })}
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.status === "Shipped" ? (
+                        <div className="flex items-center gap-2">
+                          {!order.whatsapp_sent && (
+                            <>
+                              <button
+                                onClick={() => handleSendWhatsApp(order)}
+                                disabled={sendingOrderId === order.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors disabled:opacity-50 text-xs font-medium"
+                                title="Send order message via WhatsApp"
+                              >
+                                {sendingOrderId === order.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                )}
+                                WhatsApp
+                              </button>
+
+                              <button
+                                onClick={() => handleMarkWhatsAppSent(order.id)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-colors text-xs font-medium"
+                                title="Mark message as sent"
+                              >
+                                Mark Sent
+                              </button>
+                            </>
+                          )}
+
+                          {order.whatsapp_sent && (
+                            <span className="text-xs font-bold text-emerald-500">
+                              Message sent
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
                     </td>
                   </tr>
                 ))

@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
     total NUMERIC NOT NULL,
     delivery_fee NUMERIC DEFAULT 0,
     status TEXT DEFAULT 'Pending', -- Pending, Paid, Shipped, Delivered
+    whatsapp_sent BOOLEAN DEFAULT false,
+    whatsapp_sent_at TIMESTAMP WITH TIME ZONE,
     source TEXT, -- Instagram, TikTok, WhatsApp, Direct
     payment_reference TEXT UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
