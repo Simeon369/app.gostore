@@ -3,12 +3,19 @@
  * Generates prefilled WhatsApp messages for order shipping updates
  */
 
+export interface ShippingItem {
+  name?: string;
+  productId?: string;
+  quantity: number;
+  price?: number;
+}
+
 export interface ShippingMessageData {
   orderId: string;
   customerName: string;
   customerPhone: string;
   storeName: string;
-  items: Array<{ name: string; quantity: number }>;
+  items: ShippingItem[];
   total: number;
   trackingUrl?: string;
   deliveryNote?: string;
@@ -16,7 +23,10 @@ export interface ShippingMessageData {
 
 export function generateShippingMessage(data: ShippingMessageData): string {
   const itemsList = data.items
-    .map((item) => `• ${item.name} x${item.quantity}`)
+    .map((item) => {
+      const label = item.name || item.productId || "Item";
+      return `• ${label} x${item.quantity}`;
+    })
     .join("\n");
 
   const trackingLink = data.trackingUrl
