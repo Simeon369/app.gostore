@@ -108,6 +108,15 @@ CREATE POLICY "Users can view orders for their own store" ON public.orders
 CREATE POLICY "Anyone can create an order" ON public.orders
     FOR INSERT WITH CHECK (true);
 
+-- Users can update orders for their own store
+CREATE POLICY "Users can update orders for their own store" ON public.orders
+    FOR UPDATE USING (
+        store_id IN (SELECT id FROM public.stores WHERE user_id = auth.uid())
+    )
+    WITH CHECK (
+        store_id IN (SELECT id FROM public.stores WHERE user_id = auth.uid())
+    );
+
 -- STORE VIEWS TABLE
 CREATE TABLE IF NOT EXISTS public.store_views (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
