@@ -4,7 +4,13 @@ import { Bell, Search, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
 
-export function Header({ user, store }: { user: { email?: string } | null; store: { name?: string } | null }) {
+export function Header({
+  user,
+  store,
+}: {
+  user: { email?: string } | null;
+  store: { name?: string } | null;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
