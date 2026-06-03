@@ -21,7 +21,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { CheckoutModal } from "@/components/store/checkout-modal";
-import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { Instagram, TikTok } from "@/components/icons";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -320,9 +319,7 @@ export default function ProductDetailsClient() {
               <span className="text-[10px] font-bold text-foreground max-w-[100px] truncate">{store.name}</span>
             </div>
             
-            {/* <div className="bg-muted/50 rounded-full border border-border p-0.5">
-              <ThemeToggle />
-            </div> */}
+            
           </div>
         </div>
       </header>

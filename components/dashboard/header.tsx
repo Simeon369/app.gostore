@@ -2,10 +2,9 @@
 
 import { Bell, Search, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { ThemeToggle } from "./theme-toggle";
 import { Sidebar } from "./sidebar";
 
-export function Header({ user, store }: { user: any; store: any }) {
+export function Header({ user, store }: { user: { email?: string } | null; store: { name?: string } | null }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -30,13 +29,10 @@ export function Header({ user, store }: { user: any; store: any }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           <button className="p-2 hover:bg-muted rounded-xl transition-all relative group">
             <Bell className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
           </button>
-
-
 
           {/* <div className="flex items-center gap-2">
             <div className="hidden sm:block text-right">
@@ -68,7 +64,11 @@ export function Header({ user, store }: { user: any; store: any }) {
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
-            <Sidebar user={user} store={store} onNavigate={() => setMobileOpen(false)} />
+            <Sidebar
+              user={user}
+              store={store}
+              onNavigate={() => setMobileOpen(false)}
+            />
           </div>
         </div>
       )}

@@ -21,7 +21,6 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { CheckoutModal } from "@/components/store/checkout-modal";
-import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -307,9 +306,7 @@ export default function StorefrontClient() {
             >
               <Share2 className="w-4 h-4" />
             </button>
-            {/* <div className="p-2.5 rounded-xl bg-muted/50 border border-border">
-              <ThemeToggle />
-            </div> */}
+            
           </div>
         </div>
       </nav>

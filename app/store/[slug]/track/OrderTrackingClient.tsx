@@ -7,7 +7,6 @@ import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import Image from "next/image";
 import { cn } from "@/utils/cn";
 
@@ -92,7 +91,6 @@ export default function OrderTrackingClient() {
                 <Image src={storeData.logo} alt={storeData.name} fill sizes="24px" className="object-cover" />
               </div>
             )}
-            <ThemeToggle />
           </div>
         </div>
       </header>
