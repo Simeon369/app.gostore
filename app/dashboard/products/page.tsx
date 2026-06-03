@@ -29,6 +29,10 @@ import { Instagram, TikTok, WhatsApp } from "@/components/icons";
 export default function ProductsPage() {
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [stockFilter, setStockFilter] = useState<
+    "All" | "Active" | "Out of Stock"
+  >("All");
+  const stockStatusOptions = ["All", "Active", "Out of Stock"] as const;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -168,12 +172,23 @@ export default function ProductsPage() {
   };
 
   const filteredProducts =
-    products?.filter(
-      (p) =>
-        p.tag !== "Archived" &&
-        p.tag !== "Deleted" &&
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    ) || [];
+    products?.filter((p) => {
+      const isExcluded = p.tag === "Archived" || p.tag === "Deleted";
+      if (isExcluded) return false;
+
+      const matchesSearch = p.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const isActive = Number(p.stock) > 0 || p.is_preorder;
+      const matchesStock =
+        stockFilter === "All"
+          ? true
+          : stockFilter === "Active"
+            ? isActive
+            : !isActive;
+
+      return matchesSearch && matchesStock;
+    }) || [];
 
   if (isLoading) {
     return (
@@ -226,13 +241,22 @@ export default function ProductsPage() {
             className="bg-transparent border-none outline-none text-sm w-full placeholder:text-muted-foreground/50 text-foreground"
           />
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
-          <button className="px-4 py-2 rounded-xl glass-card text-xs font-bold flex items-center gap-2 whitespace-nowrap">
-            <Filter className="w-3.5 h-3.5" /> All Categories
-          </button>
-          <button className="px-4 py-2 rounded-xl glass-card text-xs font-bold flex items-center gap-2 whitespace-nowrap">
-            Status: All
-          </button>
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 no-scrollbar">
+          
+          {stockStatusOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => setStockFilter(option)}
+              className={cn(
+                "px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                stockFilter === option
+                  ? "bg-primary text-primary-foreground"
+                  : "glass-card text-muted-foreground hover:bg-white/5",
+              )}
+            >
+              {option}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -272,18 +296,17 @@ export default function ProductsPage() {
                   className="hover:bg-white/[0.01] transition-all group"
                 >
                   <td className="px-6 py-3 lg:px-8 lg:py-5">
-                      <div className="w-12 h-12 rounded-md overflow-hidden relative border border-border bg-muted">
-                        {product.image ? (
-                          <Image
-                            src={product.image}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <Package className="w-6 h-6 m-auto text-muted-foreground opacity-20" />
-                        )}
-                      
+                    <div className="w-12 h-12 rounded-md overflow-hidden relative border border-border bg-muted">
+                      {product.image ? (
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Package className="w-6 h-6 m-auto text-muted-foreground opacity-20" />
+                      )}
                     </div>
                   </td>
                   <td>
