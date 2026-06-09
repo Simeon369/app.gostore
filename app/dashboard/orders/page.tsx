@@ -22,10 +22,16 @@ import { toast } from "sonner";
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"All" | "Paid" | "Shipped">(
+  const [statusFilter, setStatusFilter] = useState<
+    "All" | "Pending" | "Paid" | "Shipped" | "Rejected"
+  >("All");
+  const statusOptions = [
     "All",
-  );
-  const statusOptions = ["All", "Paid", "Shipped"] as const;
+    "Pending",
+    "Paid",
+    "Shipped",
+    "Rejected",
+  ] as const;
   const supabase = createClient();
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -114,11 +120,7 @@ export default function OrdersPage() {
       order.id.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus =
-      statusFilter === "All"
-        ? true
-        : statusFilter === "Shipped"
-          ? order.status === "Shipped"
-          : order.status === statusFilter;
+      statusFilter === "All" ? true : order.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -209,15 +211,19 @@ export default function OrdersPage() {
                         ? "bg-emerald-500/10 text-emerald-400"
                         : order.status === "Shipped"
                           ? "bg-blue-500/10 text-blue-400"
-                          : "bg-orange-500/10 text-orange-400",
+                          : order.status === "Rejected"
+                            ? "bg-red-500/10 text-red-400"
+                            : "bg-orange-500/10 text-orange-400",
                     )}
                   >
-                    {order.status === "Paid" ? (
+                    {order.status === "Paid" || order.status === "Shipped" ? (
                       <CheckCircle2 className="w-3 h-3" />
                     ) : (
                       <Clock className="w-3 h-3" />
                     )}
-                    {order.status}
+                    {order.status === "Pending"
+                      ? "Awaiting Confirmation"
+                      : order.status}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-6">
@@ -353,7 +359,7 @@ export default function OrdersPage() {
 
               {/* Actions */}
               <div className="flex gap-3">
-                {order.status !== "Shipped" && (
+                {order.status === "Paid" && (
                   <button
                     onClick={() => handleShipOrder(order.id)}
                     disabled={updatingOrderId === order.id}
@@ -366,8 +372,14 @@ export default function OrdersPage() {
                     )}
                     {updatingOrderId === order.id
                       ? "Shipping..."
-                      : "Ship Order"}
+                      : "Mark as Shipped"}
                   </button>
+                )}
+                {order.status === "Pending" && (
+                  <p className="text-xs text-muted-foreground font-medium py-3">
+                    Payment is being verified. You&apos;ll be notified when
+                    ready to ship.
+                  </p>
                 )}
                 <button className="p-3 rounded-2xl glass-card hover:bg-muted transition-all flex items-center justify-center">
                   <MoreVertical className="w-4 h-4 text-muted-foreground" />

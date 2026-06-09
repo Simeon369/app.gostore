@@ -45,15 +45,31 @@ CREATE TABLE IF NOT EXISTS public.orders (
     store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE NOT NULL,
     customer_name TEXT NOT NULL,
     customer_phone TEXT,
+    customer_email TEXT,
     customer_address TEXT,
     items JSONB NOT NULL, -- List of {productId, quantity, price}
     total NUMERIC NOT NULL,
     delivery_fee NUMERIC DEFAULT 0,
-    status TEXT DEFAULT 'Pending', -- Pending, Paid, Shipped, Delivered
+    status TEXT DEFAULT 'Pending', -- Pending, Paid, Shipped, Delivered, Rejected
     whatsapp_sent BOOLEAN DEFAULT false,
     whatsapp_sent_at TIMESTAMP WITH TIME ZONE,
     source TEXT, -- Instagram, TikTok, WhatsApp, Direct
     payment_reference TEXT UNIQUE,
+    payment_method TEXT DEFAULT 'manual_transfer',
+    receipt_url TEXT,
+    receipt_path TEXT,
+    receipt_uploaded_at TIMESTAMP WITH TIME ZONE,
+    receipt_deleted_at TIMESTAMP WITH TIME ZONE,
+    payment_confirmed_at TIMESTAMP WITH TIME ZONE,
+    payment_confirmed_by UUID,
+    payout_status TEXT DEFAULT 'unsettled',
+    payout_amount NUMERIC,
+    platform_fee NUMERIC,
+    settled_at TIMESTAMP WITH TIME ZONE,
+    settlement_reference TEXT,
+    vendor_notified_at TIMESTAMP WITH TIME ZONE,
+    customer_paid_notified_at TIMESTAMP WITH TIME ZONE,
+    rejection_reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

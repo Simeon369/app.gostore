@@ -1,22 +1,35 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { verifySuperAdmin } from "@/lib/admin-auth";
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
+    const { orderId, type = "shipping" } = await req.json();
     if (!orderId) {
       return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
+    const auth = await verifySuperAdmin(supabase);
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
-    const { error } = await supabase
-      .from("orders")
-      .update({
-        whatsapp_sent: true,
-        whatsapp_sent_at: new Date().toISOString(),
-      })
-      .eq("id", orderId);
+    const admin = createAdminClient();
+    const now = new Date().toISOString();
+
+    const updates: Record<string, unknown> = {};
+    if (type === "payment_vendor") {
+      updates.vendor_notified_at = now;
+    } else if (type === "payment_customer") {
+      updates.customer_paid_notified_at = now;
+    } else {
+      updates.whatsapp_sent = true;
+      updates.whatsapp_sent_at = now;
+    }
+
+    const { error } = await admin.from("orders").update(updates).eq("id", orderId);
 
     if (error) {
       console.error("Failed to mark whatsapp sent:", error);

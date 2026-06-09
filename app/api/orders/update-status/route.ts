@@ -36,7 +36,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized to modify this order" }, { status: 403 });
     }
 
-    // 3. Update the order status
+    // 3. Vendors may only mark Paid orders as Shipped
+    if (status !== "Shipped") {
+      return NextResponse.json(
+        { error: "Vendors can only mark orders as Shipped" },
+        { status: 400 },
+      );
+    }
+
+    if (order.status !== "Paid") {
+      return NextResponse.json(
+        { error: "Only paid orders can be marked as shipped" },
+        { status: 400 },
+      );
+    }
+
     const { error: updateError } = await supabase
       .from('orders')
       .update({ status })

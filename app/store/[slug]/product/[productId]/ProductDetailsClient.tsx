@@ -24,6 +24,7 @@ import { CheckoutModal } from "@/components/store/checkout-modal";
 import { Instagram, TikTok } from "@/components/icons";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { isManualTransferMode } from "@/lib/payment-config";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, "");
@@ -153,6 +154,8 @@ export default function ProductDetailsClient() {
   }, [storeData?.store?.id, searchParams, supabase]);
 
   useEffect(() => {
+    if (isManualTransferMode()) return;
+
     const paymentRef = searchParams.get("ref");
     const success = searchParams.get("success");
 

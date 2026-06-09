@@ -418,7 +418,7 @@ export function OnboardingWizard() {
               <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex gap-3 text-sm text-primary font-medium">
                 <span className="text-xl leading-none">💡</span>
                 <p>
-                  <strong className="font-black">Zero Gateway Fees:</strong> GoStore takes a flat 5% commission on your sales. We automatically adjust the customer's checkout price to cover Paystack processing fees so your payout is 100% protected!
+                  <strong className="font-black">Simple Payouts:</strong> GoStore takes a flat 5% commission on your sales (capped at ₦10,000). Add your bank details here so we can settle your 95% after each confirmed payment.
                 </p>
               </div>
 
@@ -590,7 +590,7 @@ export function OnboardingWizard() {
               
               <div>
                 <h2 className="text-2xl font-black text-foreground">You are live! 🚀</h2>
-                <p className="text-muted-foreground mt-2">Your store is ready to accept payments.</p>
+                <p className="text-muted-foreground mt-2">Your store is ready to accept orders.</p>
               </div>
 
               <div className="w-full bg-muted border border-border rounded-2xl p-4 flex flex-col gap-3">

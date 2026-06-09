@@ -1,5 +1,5 @@
 import { createAdminClient } from "../../utils/supabase/admin";
-import { Users2, Store, Package, DollarSign } from "lucide-react";
+import { Users2, Store, Package, DollarSign, Clock, Truck } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -19,9 +19,25 @@ export default async function AdminOverviewPage() {
     supabase.from("stores").select("*", { count: "exact", head: true }),
     supabase.from("products").select("*", { count: "exact", head: true }),
     supabase.from("orders").select("*", { count: "exact", head: true }),
+    supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "Pending"),
+    supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "Shipped")
+      .eq("whatsapp_sent", false),
   ]);
 
-  const [waitlistCount, storeCount, productCount, orderCount] = results.map(
+  const [
+    waitlistCount,
+    storeCount,
+    productCount,
+    orderCount,
+    pendingPaymentsCount,
+    shippedActionCount,
+  ] = results.map(
     (result, index) => {
       if (result.status === "fulfilled") {
         return result.value.count || 0;
@@ -68,6 +84,22 @@ export default async function AdminOverviewPage() {
       bg: "bg-emerald-500/10",
       href: "/admin/transactions",
     },
+    {
+      name: "Pending Payments",
+      value: pendingPaymentsCount || 0,
+      icon: Clock,
+      color: "text-orange-500",
+      bg: "bg-orange-500/10",
+      href: "/admin/transactions",
+    },
+    {
+      name: "Needs Shipping WA",
+      value: shippedActionCount || 0,
+      icon: Truck,
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
+      href: "/admin/transactions",
+    },
   ];
 
   return (
@@ -82,7 +114,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {stats.map((stat) => (
           <Link href={stat.href} key={stat.name} className="block">
             <div className="p-6 rounded-[24px] bg-card border border-border flex flex-col gap-4 hover:shadow-lg hover:-translate-y-1 transition-all">

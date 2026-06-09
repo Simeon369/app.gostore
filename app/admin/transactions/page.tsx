@@ -14,7 +14,9 @@ export default async function AdminTransactionsPage() {
 
   const { data: orders, error } = await supabase
     .from("orders")
-    .select("*, stores(name, slug)")
+    .select(
+      "*, stores(name, slug, whatsapp, bank_name, account_number, account_name)",
+    )
     .order("created_at", { ascending: false });
 
   if (error) {

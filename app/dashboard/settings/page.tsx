@@ -440,17 +440,7 @@ export default function SettingsPage() {
                   <p className="text-xs lg:text-sm text-muted-foreground">Verified payouts are sent directly to this account.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setSelectedBank("058");
-                      setAccountNumber("0000000002"); 
-                      setAccountName(""); 
-                    }}
-                    className="bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors border border-primary/20"
-                  >
-                    Quick Fill Test Account
-                  </button>
+                  
                   {store?.paystack_sub_account_code ? (
                     <div className="flex items-center gap-2 bg-emerald-500/10 text-emerald-500 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider w-fit border border-emerald-500/20">
                       <CheckCircle2 className="w-3.5 h-3.5" />
