@@ -22,7 +22,7 @@ export function AdminHeader({ user }: { user: any }) {
           </button>
           
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-zinc-500" />
+            <ShieldCheck className="w-5 h-5 text-muted-foreground" />
             <span className="font-bold text-sm tracking-tight text-foreground">Admin</span>
           </div>
         </div>

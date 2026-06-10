@@ -3,6 +3,7 @@ import "./globals.css";
 
 import QueryProvider from "../providers/query-provider";
 import { ThemeProvider } from "../providers/theme-provider";
+import { ThemeAwareToaster } from "../components/theme-aware-toaster";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://app-gostore.vercel.app"),
@@ -31,8 +32,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { Toaster } from "sonner";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -46,10 +45,11 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          storageKey="gostore-app-theme"
         >
           <QueryProvider>
             {children}
-            <Toaster position="top-center" richColors />
+            <ThemeAwareToaster />
           </QueryProvider>
         </ThemeProvider>
       </body>

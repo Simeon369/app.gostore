@@ -303,7 +303,7 @@ export function OnboardingWizard() {
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto glass-card rounded-[40px] overflow-hidden shadow-2xl bg-card border-border relative min-h-[500px] flex flex-col transition-all duration-300">
+    <div className="w-full max-w-xl mx-auto bg-card border border-border rounded-[40px] overflow-hidden shadow-2xl relative min-h-[500px] flex flex-col transition-all duration-300">
       {/* Header */}
       <div className="p-8 border-b border-border bg-card relative z-10 rounded-t-[40px]">
         <div className="flex items-center justify-between mb-8">

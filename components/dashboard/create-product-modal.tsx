@@ -339,7 +339,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="glass-card w-full max-w-2xl bg-card border-border shadow-2xl overflow-hidden relative z-10 flex flex-col max-h-[90vh] rounded-[32px]"
+          className="w-full max-w-2xl bg-card border border-border shadow-2xl overflow-hidden relative z-10 flex flex-col max-h-[90vh] rounded-[32px]"
         >
           <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
             {/* Header - Fixed */}
@@ -785,7 +785,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                         {/* Sizes */}
                         {sizes.length > 0 && (
                           <div className="flex flex-col gap-1.5">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Sizes / Lengths</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Sizes / Lengths</span>
                             <div className="flex flex-wrap gap-1.5">
                               {sizes.map((s) => (
                                 <span
@@ -809,7 +809,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                         {/* Colors */}
                         {colors.length > 0 && (
                           <div className="flex flex-col gap-1.5">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Colors</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Colors</span>
                             <div className="flex flex-wrap gap-1.5">
                               {colors.map((c) => (
                                 <span
@@ -833,7 +833,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                         {/* Textures */}
                         {textures.length > 0 && (
                           <div className="flex flex-col gap-1.5">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Textures</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Textures</span>
                             <div className="flex flex-wrap gap-1.5">
                               {textures.map((t) => (
                                 <span
@@ -857,7 +857,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                         {/* Types */}
                         {types.length > 0 && (
                           <div className="flex flex-col gap-1.5">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Types</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Types</span>
                             <div className="flex flex-wrap gap-1.5">
                               {types.map((tp) => (
                                 <span

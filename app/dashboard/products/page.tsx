@@ -293,7 +293,7 @@ export default function ProductsPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.05 }}
-                  className="hover:bg-white/[0.01] transition-all group"
+                  className="hover:bg-muted/50 transition-all group"
                 >
                   <td className="px-6 py-3 lg:px-8 lg:py-5">
                     <div className="w-12 h-12 rounded-md overflow-hidden relative border border-border bg-muted">

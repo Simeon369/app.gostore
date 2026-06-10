@@ -227,7 +227,7 @@ export default function StorefrontClient() {
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
         {verifying && (
-          <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">
+          <p className="text-muted-foreground font-bold animate-pulse uppercase tracking-widest text-[10px]">
             Verifying your payment...
           </p>
         )}
@@ -431,7 +431,7 @@ export default function StorefrontClient() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="relative aspect-square rounded-[20px] overflow-hidden group  bg-zinc-900 transition-all duration-300"
+                className="relative aspect-square rounded-[20px] overflow-hidden group bg-card border border-border transition-all duration-300"
               >
                 {/* Clickable Card link */}
                 <Link
@@ -450,7 +450,7 @@ export default function StorefrontClient() {
                     className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out z-0"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-800 z-0">
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted z-0">
                     <ShoppingBag className="w-10 h-10 text-muted-foreground opacity-30" />
                   </div>
                 )}
@@ -459,7 +459,7 @@ export default function StorefrontClient() {
                 {product.tag && (
                   <div
                     className={cn(
-                      "absolute top-3 left-3 px-2.5 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest z-20 shadow-lg border border-white/5 backdrop-blur-md",
+                      "absolute top-3 left-3 px-2.5 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest z-20 shadow-lg border border-border backdrop-blur-md",
                       product.tag === "Sold Out"
                         ? "bg-red-500/80 text-white"
                         : product.tag === "Pre-order"
@@ -472,11 +472,11 @@ export default function StorefrontClient() {
                 )}
 
                 {/* Smooth Dark Vignette Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent pointer-events-none z-10 transition-opacity duration-300 group-hover:opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/45 to-transparent pointer-events-none z-10 transition-opacity duration-300 group-hover:opacity-90" />
 
                 {/* Info Text overlays */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 flex flex-col gap-1 z-20 pointer-events-none">
-                  <h3 className="font-bold text-xs sm:text-base md:text-lg text-white leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+                  <h3 className="font-bold text-xs sm:text-base md:text-lg text-foreground leading-snug line-clamp-1 group-hover:text-primary transition-colors">
                     {product.name}
                   </h3>
                   <p className="text-primary font-black text-xs sm:text-sm md:text-base tracking-wide">

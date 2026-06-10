@@ -217,7 +217,7 @@ export function ManageCollectionsModal({
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
-                    className="flex items-center justify-between p-3.5 rounded-2xl bg-white/[0.02] border border-border hover:border-primary/20 hover:bg-white/[0.03] transition-all group"
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/50 border border-border hover:border-primary/20 hover:bg-muted transition-all group"
                   >
                     <span className="text-sm font-bold text-foreground capitalize tracking-wide">{c}</span>
                     <button
