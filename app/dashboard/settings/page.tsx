@@ -514,7 +514,7 @@ export default function SettingsPage() {
                       <button 
                         onClick={() => setIsEditingBank(false)}
                         type="button"
-                        className="px-8 py-5 rounded-[24px] bg-muted text-muted-foreground font-black hover:bg-white/5 transition-all text-xs lg:text-sm uppercase tracking-wider"
+                        className="px-8 py-5 rounded-[24px] bg-muted text-muted-foreground font-black hover:bg-muted transition-all text-xs lg:text-sm uppercase tracking-wider"
                       >
                         Cancel
                       </button>
@@ -538,7 +538,7 @@ export default function SettingsPage() {
                   <button 
                     onClick={() => setIsEditingBank(true)}
                     type="button"
-                    className="px-6 py-3 rounded-2xl bg-muted hover:bg-white/5 border border-border text-foreground text-xs lg:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap"
+                    className="px-6 py-3 rounded-2xl bg-muted hover:bg-muted border border-border text-foreground text-xs lg:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap"
                   >
                     Edit Details
                   </button>

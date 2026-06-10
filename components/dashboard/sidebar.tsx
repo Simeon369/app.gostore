@@ -96,7 +96,7 @@ export function Sidebar({ user, store, onNavigate }: { user: any; store: any; on
           <Link
             href="/admin"
             onClick={onNavigate}
-            className="flex items-center gap-3 px-4 py-3 mt-2 rounded-2xl transition-all font-bold text-[15px] border text-white bg-zinc-900 border-zinc-800 hover:bg-black group shadow-lg"
+            className="flex items-center gap-3 px-4 py-3 mt-2 rounded-2xl transition-all font-bold text-[15px] border text-foreground bg-card border-border hover:bg-muted group shadow-lg"
           >
             <ShieldCheck className="w-5 h-5 text-amber-500" />
             Super Admin

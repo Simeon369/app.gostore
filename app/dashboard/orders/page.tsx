@@ -177,7 +177,7 @@ export default function OrdersPage() {
                 "px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap",
                 statusFilter === option
                   ? "bg-primary text-primary-foreground"
-                  : "glass-card text-muted-foreground hover:bg-white/5",
+                  : "glass-card text-muted-foreground hover:bg-muted",
               )}
             >
               {option}
@@ -196,7 +196,7 @@ export default function OrdersPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="glass-card rounded-2xl lg:rounded-[32px] p-5 lg:p-8 flex flex-col gap-6 hover:border-primary/30 transition-all group border border-white/5"
+              className="glass-card rounded-2xl lg:rounded-[32px] p-5 lg:p-8 flex flex-col gap-6 hover:border-primary/30 transition-all group border border-border"
             >
               {/* Order Identity & Status */}
               <div className="flex flex-col gap-3 border-b border-border pb-4">

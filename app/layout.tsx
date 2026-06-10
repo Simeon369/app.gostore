@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full antialiased">
-      <body className="min-h-full flex flex-col font-body">
+      <body className="min-h-full flex flex-col font-body bg-background text-foreground">
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="system"

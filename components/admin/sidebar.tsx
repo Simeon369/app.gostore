@@ -39,14 +39,14 @@ export function AdminSidebar({ user, onNavigate }: { user: any; onNavigate?: () 
     <div className="flex flex-col h-full p-6">
       {/* Logo / Title */}
       <div className="flex items-center gap-3 px-2 mb-10">
-        <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
-          <ShieldCheck className="w-5 h-5 text-white" />
+        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+          <ShieldCheck className="w-5 h-5 text-foreground" />
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-black tracking-tight leading-none text-foreground">
             Super Admin
           </span>
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">GoStore Root</span>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">GoStore Root</span>
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export function AdminSidebar({ user, onNavigate }: { user: any; onNavigate?: () 
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-semibold text-[15px] border",
                 isActive 
-                  ? "bg-zinc-800 text-white border-zinc-700" 
+                  ? "bg-primary/10 text-primary border-primary/20" 
                   : "text-muted-foreground hover:bg-muted border-transparent hover:border-border"
               )}
             >

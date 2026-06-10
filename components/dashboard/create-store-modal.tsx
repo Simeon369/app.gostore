@@ -45,24 +45,24 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-background w-full max-w-md rounded-[40px] border border-white/10 shadow-2xl overflow-hidden"
+        className="bg-background w-full max-w-md rounded-[40px] border border-border shadow-2xl overflow-hidden"
       >
-        <div className="p-8 border-b border-white/5 flex items-center justify-between">
+        <div className="p-8 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/20 rounded-xl text-primary">
               <StoreIcon className="w-5 h-5" />
             </div>
             <h2 className="text-xl font-black italic">Launch New Store</h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-all">
-            <X className="w-6 h-6 text-zinc-500" />
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-all">
+            <X className="w-6 h-6 text-muted-foreground" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 flex flex-col gap-6">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Store Name</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Store Name</label>
               <input 
                 type="text" 
                 placeholder="e.g. Luxe Beauty" 
@@ -72,11 +72,11 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
                   setName(e.target.value);
                   setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"));
                 }}
-                className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-700 font-bold"
+                className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground font-bold"
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Store Link slug</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Store Link slug</label>
               <div className="relative">
                 <input 
                   type="text" 
@@ -84,7 +84,7 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
                   required 
                   value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-700 font-bold"
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground font-bold"
                 />
               </div>
             </div>
@@ -92,8 +92,8 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
 
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex gap-3">
             <Globe className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-            <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
-              Your store will be instantly live at <span className="text-white font-bold">app-gostore.vercel.app/store/{slug || "..."}</span>
+            <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
+              Your store will be instantly live at <span className="text-foreground font-bold">app-gostore.vercel.app/store/{slug || "..."}</span>
             </p>
           </div>
 

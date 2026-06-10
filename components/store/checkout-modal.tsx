@@ -256,13 +256,13 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
-        className="bg-background w-full max-w-lg rounded-t-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-background w-full max-w-lg rounded-t-[32px] sm:rounded-[40px] border border-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+        <div className="p-6 border-b border-border flex items-center justify-between">
           <h2 className="text-xl font-bold">
             {manualMode ? "Bank Transfer Checkout" : "Secure Checkout"}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-all">
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-all">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -286,7 +286,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
             <div className="flex flex-col gap-6">
               <div className="flex items-center gap-2 mb-2">
                 <User className="w-4 h-4 text-primary" />
-                <h3 className="font-bold uppercase text-[10px] tracking-widest text-zinc-500">
+                <h3 className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
                   Customer Details
                 </h3>
               </div>
@@ -298,7 +298,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Full Name"
                   required
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-600 text-sm"
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm"
                 />
                 <input
                   type="email"
@@ -306,7 +306,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                   onChange={(e) => setCustomerEmail(e.target.value)}
                   placeholder="Email Address"
                   required
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-600 text-sm"
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm"
                 />
                 <input
                   type="tel"
@@ -314,7 +314,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="Phone Number"
                   required
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-600 text-sm"
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm"
                 />
                 <textarea
                   value={customerAddress}
@@ -322,7 +322,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                   placeholder="Delivery Address"
                   required
                   rows={2}
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-600 text-sm resize-none"
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm resize-none"
                 />
               </div>
             </div>
@@ -330,7 +330,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
             <div className="flex flex-col gap-6">
               <div className="flex items-center gap-2 mb-2">
                 <Truck className="w-4 h-4 text-primary" />
-                <h3 className="font-bold uppercase text-[10px] tracking-widest text-zinc-500">
+                <h3 className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
                   Delivery Zone
                 </h3>
               </div>
@@ -345,7 +345,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                       "flex items-center justify-between p-4 rounded-2xl border transition-all text-sm",
                       selectedZone?.name === zone.name
                         ? "bg-primary/10 border-primary text-primary font-bold"
-                        : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/20",
+                        : "bg-muted border-border text-muted-foreground hover:border-primary/30",
                     )}
                   >
                     <span>{zone.name}</span>
@@ -353,7 +353,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                   </button>
                 ))}
                 {zones.length === 0 && (
-                  <p className="text-xs text-zinc-500 p-4 bg-white/5 rounded-2xl italic">
+                  <p className="text-xs text-muted-foreground p-4 bg-muted rounded-2xl italic">
                     No delivery zones configured. Shipping is free.
                   </p>
                 )}
@@ -428,7 +428,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-2">
                     <Upload className="w-4 h-4 text-primary" />
-                    <h3 className="font-bold uppercase text-[10px] tracking-widest text-zinc-500">
+                    <h3 className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
                       Upload Payment Receipt *
                     </h3>
                   </div>
@@ -495,12 +495,12 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
               </>
             )}
 
-            <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex flex-col gap-3">
-              <div className="flex justify-between text-sm text-zinc-400">
+            <div className="p-6 rounded-3xl bg-muted border border-border flex flex-col gap-3">
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Subtotal</span>
                 <span>₦{Number(product.price).toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-sm text-zinc-400">
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Delivery Fee</span>
                 <span>
                   {selectedZone
@@ -510,7 +510,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                       : "Select Zone"}
                 </span>
               </div>
-              <div className="h-[1px] bg-white/10 my-1" />
+              <div className="h-[1px] bg-border my-1" />
               <div className="flex justify-between items-center">
                 <span className="font-bold">Total to Pay</span>
                 <span className="text-xl font-black text-primary">

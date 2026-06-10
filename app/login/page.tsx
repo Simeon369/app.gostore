@@ -67,32 +67,32 @@ export default function LoginPage() {
             className="w-12 h-12 mb-2"
           /> */}
           <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
-          <p className="text-zinc-400">Login to manage your storefront</p>
+          <p className="text-muted-foreground">Login to manage your storefront</p>
         </div>
 
-        <div className="glass-card p-8 rounded-[32px] flex flex-col gap-6 shadow-2xl">
+        <div className="bg-card border border-border p-8 rounded-[32px] flex flex-col gap-6 shadow-2xl">
           <form onSubmit={handleLogin} className="flex flex-col gap-6">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-zinc-400 ml-1">Email Address</label>
+                <label className="text-sm font-bold text-muted-foreground ml-1">Email Address</label>
                 <input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="hello@creator.com"
                   required
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-zinc-600"
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-zinc-400 ml-1">Password</label>
+                <label className="text-sm font-bold text-muted-foreground ml-1">Password</label>
                 <input 
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-zinc-600"
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground"
                 />
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function LoginPage() {
           </div> */}
         </div>
 
-        <p className="text-center text-zinc-500 font-medium">
+        <p className="text-center text-muted-foreground font-medium">
           Don't have an account?{" "}
           <Link href="/signup" className="text-primary hover:underline font-bold">
             Create Store

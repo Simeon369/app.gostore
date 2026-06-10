@@ -251,7 +251,7 @@ export default function ProductsPage() {
                 "px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap",
                 stockFilter === option
                   ? "bg-primary text-primary-foreground"
-                  : "glass-card text-muted-foreground hover:bg-white/5",
+                  : "glass-card text-muted-foreground hover:bg-muted",
               )}
             >
               {option}
@@ -319,7 +319,7 @@ export default function ProductsPage() {
                           {product.collections.map((c: string) => (
                             <span
                               key={c}
-                              className="px-1.5 py-0.5 rounded bg-white/5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider border border-white/5"
+                              className="px-1.5 py-0.5 rounded bg-muted text-[9px] font-bold text-muted-foreground uppercase tracking-wider border border-border"
                             >
                               {c}
                             </span>
@@ -374,7 +374,7 @@ export default function ProductsPage() {
                       {/* Edit Button */}
                       <button
                         onClick={() => handleEdit(product)}
-                        className="p-2 hover:bg-white/5 rounded-xl transition-all group-hover:text-primary"
+                        className="p-2 hover:bg-muted rounded-xl transition-all group-hover:text-primary"
                         title="Edit product"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -410,7 +410,7 @@ export default function ProductsPage() {
                               });
                             }
                           }}
-                          className="p-2 hover:bg-white/5 rounded-xl transition-all"
+                          className="p-2 hover:bg-muted rounded-xl transition-all"
                           title="More actions"
                         >
                           <MoreVertical className="w-4 h-4" />
