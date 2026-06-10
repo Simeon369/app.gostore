@@ -51,7 +51,9 @@ export default function OrderTrackingClient() {
   const params = useParams();
   const searchParams = useSearchParams();
   const slug = params.slug as string;
-  const initialOrderId = searchParams.get("orderId") || "";
+  const initialOrderId = (searchParams.get("orderId") || "")
+    .trim()
+    .toUpperCase();
 
   const [orderIdInput, setOrderIdInput] = useState(initialOrderId);
   const [activeSearchId, setActiveSearchId] = useState(initialOrderId);
@@ -75,31 +77,32 @@ export default function OrderTrackingClient() {
     isLoading: isSearching,
     isError,
   } = useQuery({
-    queryKey: ["order-track", activeSearchId],
+    queryKey: ["order-track", slug, activeSearchId],
     queryFn: async () => {
-      if (!activeSearchId || !storeData?.id) return null;
+      if (!activeSearchId || !slug) return null;
 
-      const { data: order, error } = await supabase
-        .from("orders")
-        .select("*")
-        .ilike("id", `${activeSearchId}%`)
-        .eq("store_id", storeData.id)
-        .single();
+      const ref = activeSearchId.trim();
+      const res = await fetch(
+        `/api/orders/track?orderId=${encodeURIComponent(ref)}&storeSlug=${encodeURIComponent(slug)}`,
+      );
+      const data = await res.json();
 
-      if (error || !order) {
-        throw new Error("Order not found");
+      if (!res.ok) {
+        throw new Error(data.error || "Order not found");
       }
-      return order;
+      return data;
     },
-    enabled: !!activeSearchId && !!storeData?.id,
+    enabled: !!activeSearchId && !!slug,
     retry: false,
   });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (orderIdInput.trim()) {
-      setActiveSearchId(orderIdInput.trim());
-      window.history.replaceState({}, "", `?orderId=${orderIdInput.trim()}`);
+    const ref = orderIdInput.trim().toUpperCase();
+    if (ref) {
+      setOrderIdInput(ref);
+      setActiveSearchId(ref);
+      window.history.replaceState({}, "", `?orderId=${encodeURIComponent(ref)}`);
     }
   };
 
@@ -215,7 +218,7 @@ export default function OrderTrackingClient() {
                         Order ID
                       </p>
                       <p className="text-sm font-bold text-foreground uppercase">
-                        {orderData.id.split("-")[0]}
+                        {orderData.id.split("-")[0].toUpperCase()}
                       </p>
                     </div>
                     <div className="text-right">

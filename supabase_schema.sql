@@ -126,6 +126,8 @@ CREATE POLICY "Users can view orders for their own store" ON public.orders
 CREATE POLICY "Anyone can create an order" ON public.orders
     FOR INSERT WITH CHECK (true);
 
+-- Order tracking uses /api/orders/track (service role). No public SELECT on orders.
+
 -- Users can update orders for their own store
 CREATE POLICY "Users can update orders for their own store" ON public.orders
     FOR UPDATE USING (
