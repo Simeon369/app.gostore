@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Store, 
@@ -25,7 +25,7 @@ import {
 import { getPaymentMode } from "@/lib/payment-config";
 
 const formatWhatsAppNumber = (phone: string): string => {
-  let clean = phone.replace(/\D/g, '');
+  const clean = phone.replace(/\D/g, '');
   if (clean.startsWith('234')) return clean;
   if (clean.startsWith('0')) return '234' + clean.slice(1);
   if (!clean) return '';
@@ -154,7 +154,18 @@ export function OnboardingWizard() {
   const router = useRouter();
 
   // Step 1 State
-  const [storeName, setStoreName] = useState("");
+  const [storeName, setStoreName] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const raw = sessionStorage.getItem("gostore_signup_store");
+      if (!raw) return "";
+      const parsed = JSON.parse(raw) as { storeName?: string };
+      sessionStorage.removeItem("gostore_signup_store");
+      return parsed.storeName ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [whatsapp, setWhatsapp] = useState("");
   const [category, setCategory] = useState("Fashion & Apparel");
   const [otherCategory, setOtherCategory] = useState("");
@@ -188,21 +199,6 @@ export function OnboardingWizard() {
     { label: "Digital Services", value: "Digital Services" },
     { label: "Other", value: "Other" }
   ];
-
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("gostore_signup_store");
-      if (raw) {
-        const parsed = JSON.parse(raw) as { storeName?: string };
-        if (parsed.storeName) {
-          setStoreName(parsed.storeName);
-        }
-        sessionStorage.removeItem("gostore_signup_store");
-      }
-    } catch {
-      // ignore invalid session data
-    }
-  }, []);
 
   const handleNext = () => setStep((s) => s + 1);
   const handleBack = () => setStep((s) => s - 1);
@@ -294,9 +290,10 @@ export function OnboardingWizard() {
       setTimeout(() => {
         router.push("/dashboard");
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error launching store:", error);
-      alert(error.message || "Failed to create store. Please try again.");
+      const message = error instanceof Error ? error.message : "Failed to create store. Please try again.";
+      alert(message);
       setLoading(false);
     }
   };
