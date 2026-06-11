@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Store, 
-  Package, 
   Rocket, 
   ArrowRight, 
   Loader2, 
@@ -567,7 +566,7 @@ export function OnboardingWizard() {
             Back
           </button>
         ) : (
-          <div /> // Spacer
+          <span className="w-0" aria-hidden />
         )}
 
         {step < 4 ? (
