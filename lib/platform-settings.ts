@@ -1,4 +1,14 @@
+import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/admin";
+
+function createPublicSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  }
+  return createClient(url, key);
+}
 
 export type PlatformSettings = {
   signup_enabled: boolean;
@@ -20,8 +30,9 @@ export function getMarketingWaitlistUrl(): string {
 
 export async function getPlatformSettings(): Promise<PlatformSettings> {
   try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
+    // Public read via anon key + RLS (no service role required on edge/server)
+    const supabase = createPublicSupabaseClient();
+    const { data, error } = await supabase
       .from("platform_settings")
       .select("signup_enabled, maintenance_mode, updated_at")
       .eq("id", 1)
