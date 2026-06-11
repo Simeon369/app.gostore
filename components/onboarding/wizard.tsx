@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Store, 
-  Building2, 
   Package, 
   Rocket, 
   ArrowRight, 
@@ -13,14 +12,18 @@ import {
   Copy, 
   ChevronDown, 
   Check, 
-  Search,
-  AlertCircle
+  Search
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 import { slugifyStoreName } from "@/lib/store-slug";
+import {
+  BankAccountVerification,
+  type BankAccountFields,
+} from "@/components/bank-account-verification";
+import { getPaymentMode } from "@/lib/payment-config";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, '');
@@ -157,14 +160,14 @@ export function OnboardingWizard() {
   const [category, setCategory] = useState("Fashion & Apparel");
   const [otherCategory, setOtherCategory] = useState("");
 
-  // Step 2 State
-  const [bankList, setBankList] = useState<Option[]>([]);
-  const [bankName, setBankName] = useState("");
-  const [bankCode, setBankCode] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [accountName, setAccountName] = useState("");
-  const [verifyingBank, setVerifyingBank] = useState(false);
-  const [bankError, setBankError] = useState<string | null>(null);
+  // Step 2 State — verified via Paystack resolve API
+  const [bankAccount, setBankAccount] = useState<BankAccountFields>({
+    bankName: "",
+    bankCode: "",
+    accountNumber: "",
+    accountName: "",
+    isVerified: false,
+  });
 
   // Step 3 State: Socials
   const [socials, setSocials] = useState({
@@ -202,58 +205,8 @@ export function OnboardingWizard() {
     }
   }, []);
 
-  // Fetch banks from Paystack API via server route
-  useEffect(() => {
-    async function loadBanks() {
-      try {
-        const res = await fetch("/api/banks");
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          const sorted = data.map((b: any) => ({
-            label: b.name,
-            value: b.name,
-            code: b.code
-          }));
-          setBankList(sorted);
-          // Default to first bank
-          if (sorted.length > 0) {
-            setBankName(sorted[0].value);
-            setBankCode(sorted[0].code);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load banks:", err);
-      }
-    }
-    loadBanks();
-  }, []);
-
   const handleNext = () => setStep((s) => s + 1);
   const handleBack = () => setStep((s) => s - 1);
-
-  const verifyBankAccount = async (accNum: string, code: string) => {
-    if (accNum.length !== 10 || !code) return;
-    setVerifyingBank(true);
-    setBankError(null);
-    setAccountName("");
-
-    try {
-      const res = await fetch(`/api/banks/validate?accountNumber=${accNum}&bankCode=${code}`);
-      const data = await res.json();
-      
-      if (data.error) {
-        setBankError(data.error);
-      } else if (data.accountName) {
-        setAccountName(data.accountName);
-      } else {
-        setBankError("Could not resolve account");
-      }
-    } catch (err: any) {
-      setBankError(err.message || "Failed to verify account");
-    } finally {
-      setVerifyingBank(false);
-    }
-  };
 
   const handleLaunch = async () => {
     setLoading(true);
@@ -279,23 +232,57 @@ export function OnboardingWizard() {
       const formattedWhatsapp = formatWhatsAppNumber(whatsapp);
       const finalCategory = category === "Other" ? otherCategory : category;
 
+      if (!bankAccount.isVerified || !bankAccount.accountName) {
+        throw new Error("Please verify your bank account with Paystack before launching.");
+      }
+
+      // Re-check with Paystack before saving
+      const verifyRes = await fetch(
+        `/api/banks/validate?accountNumber=${bankAccount.accountNumber}&bankCode=${bankAccount.bankCode}`,
+      );
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.accountName) {
+        throw new Error(verifyData.error || "Bank account could not be verified. Please try again.");
+      }
+
       // 1. Create the store
-      const { error: storeError } = await supabase
-        .from('stores')
+      const { data: newStore, error: storeError } = await supabase
+        .from("stores")
         .insert({
           user_id: user.id,
           name: storeName,
           slug,
           category: finalCategory,
           whatsapp: formattedWhatsapp,
-          bank_name: bankName,
-          account_number: accountNumber,
-          account_name: accountName,
+          bank_name: bankAccount.bankName,
+          bank_code: bankAccount.bankCode,
+          account_number: bankAccount.accountNumber,
+          account_name: verifyData.accountName,
           channels: socials,
-          status: 'Live'
-        });
+          status: "Live",
+        })
+        .select("id")
+        .single();
 
       if (storeError) throw storeError;
+
+      if (getPaymentMode() === "paystack" && newStore?.id) {
+        const payoutRes = await fetch("/api/payout/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bankCode: bankAccount.bankCode,
+            bankName: bankAccount.bankName,
+            accountNumber: bankAccount.accountNumber,
+            accountName: verifyData.accountName,
+            storeId: newStore.id,
+          }),
+        });
+        const payoutData = await payoutRes.json();
+        if (!payoutRes.ok || payoutData.status !== "success") {
+          throw new Error(payoutData.error || "Failed to register Paystack settlement account");
+        }
+      }
 
       // Trigger confetti
       confetti({
@@ -448,76 +435,7 @@ export function OnboardingWizard() {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                  <Building2 className="w-3 h-3" /> Bank Name
-                </label>
-                {bankList.length > 0 ? (
-                  <CustomSelect 
-                    options={bankList}
-                    value={bankName}
-                    onChange={(opt) => {
-                      setBankName(opt.value);
-                      setBankCode(opt.code || "");
-                      setAccountName("");
-                      setBankError(null);
-                      if (accountNumber.length === 10) {
-                        verifyBankAccount(accountNumber, opt.code || "");
-                      }
-                    }}
-                    placeholder="Search bank name"
-                    searchPlaceholder="Type to search bank..."
-                    searchable
-                  />
-                ) : (
-                  <div className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-xs font-bold text-muted-foreground/60 flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" /> Loading bank directory...
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Number</label>
-                <input 
-                  type="text" 
-                  value={accountNumber}
-                  onChange={(e) => {
-                    const clean = e.target.value.replace(/\D/g, "");
-                    setAccountNumber(clean);
-                    if (clean.length === 10) {
-                      verifyBankAccount(clean, bankCode);
-                    } else {
-                      setAccountName("");
-                      setBankError(null);
-                    }
-                  }}
-                  maxLength={10}
-                  placeholder="0123456789"
-                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground placeholder:text-muted-foreground/50 shadow-sm"
-                />
-              </div>
-
-              {verifyingBank && (
-                <div className="flex items-center gap-3 text-primary text-xs font-black uppercase tracking-widest bg-primary/10 p-4 rounded-2xl border border-primary/20 animate-pulse">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Verifying Bank Account...
-                </div>
-              )}
-
-              {bankError && (
-                <div className="flex items-center gap-3 text-red-500 text-xs font-black uppercase tracking-widest bg-red-500/10 p-4 rounded-2xl border border-red-500/20">
-                  <AlertCircle className="w-4 h-4" /> {bankError}
-                </div>
-              )}
-
-              {accountName && !verifyingBank && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-emerald-500 ml-1">Account Verified</label>
-                  <div className="w-full px-5 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 font-black flex items-center justify-between shadow-sm">
-                    <span>{accountName}</span>
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                  </div>
-                </div>
-              )}
+              <BankAccountVerification value={bankAccount} onChange={setBankAccount} />
             </motion.div>
           )}
 
@@ -658,7 +576,7 @@ export function OnboardingWizard() {
             onClick={handleNext}
             disabled={
               (step === 1 && (!storeName || !whatsapp || (category === "Other" && !otherCategory))) ||
-              (step === 2 && (!accountName))
+              (step === 2 && !bankAccount.isVerified)
             }
             className="px-8 py-3 rounded-[20px] brand-gradient text-primary-foreground font-black flex items-center gap-2 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(158,226,55,0.2)]"
           >

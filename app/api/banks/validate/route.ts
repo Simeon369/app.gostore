@@ -12,7 +12,11 @@ export async function GET(req: Request) {
     }
 
     const result = await validatePaystackAccount(accountNumber, bankCode);
-    return NextResponse.json({ accountName: result.account_name });
+    return NextResponse.json({
+      accountName: result.account_name,
+      accountNumber: result.account_number,
+      verified: true,
+    });
   } catch (error: any) {
     console.error("Account Validation Error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
