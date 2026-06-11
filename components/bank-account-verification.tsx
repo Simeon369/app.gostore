@@ -229,14 +229,7 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex gap-3 text-sm text-primary font-medium">
-        <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
-        <p>
-          We verify your payout account with{" "}
-          <strong className="font-black">Paystack</strong> before you can continue. This
-          ensures settlements go to the correct Nigerian bank account.
-        </p>
-      </div>
+      
 
       <div className="flex flex-col gap-2">
         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
@@ -244,8 +237,7 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
         </label>
         {loadingBanks ? (
           <div className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-xs font-bold text-muted-foreground/60 flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-primary" /> Loading banks from
-            Paystack...
+            <Loader2 className="w-4 h-4 animate-spin text-primary" /> Loading banks...
           </div>
         ) : banksError ? (
           <div className="flex items-center gap-3 text-red-500 text-xs font-medium bg-red-500/10 p-4 rounded-2xl border border-red-500/20">
@@ -279,7 +271,7 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
 
       {verifying && (
         <div className="flex items-center gap-3 text-primary text-xs font-black uppercase tracking-widest bg-primary/10 p-4 rounded-2xl border border-primary/20 animate-pulse">
-          <Loader2 className="w-4 h-4 animate-spin" /> Verifying with Paystack...
+          <Loader2 className="w-4 h-4 animate-spin" /> Verifying ...
         </div>
       )}
 
@@ -305,7 +297,7 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
       {value.isVerified && value.accountName && !verifying && (
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black uppercase tracking-widest text-emerald-500 ml-1">
-            Paystack Verified
+            Verified
           </label>
           <div className="w-full px-5 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 font-black flex items-center justify-between shadow-sm">
             <span>{value.accountName}</span>
