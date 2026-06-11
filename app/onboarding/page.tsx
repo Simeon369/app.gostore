@@ -18,7 +18,7 @@ export default function OnboardingPage() {
             className="w-12 h-12 mb-2"
           />
           <h1 className="text-3xl font-black tracking-tight">Let's setup your store</h1>
-          <p className="text-muted-foreground">It only takes 60 seconds to get ready for payments.</p>
+          <p className="text-muted-foreground">It only takes 5 minutes to get your store ready for payments.</p>
         </div>
 
         <OnboardingWizard />
