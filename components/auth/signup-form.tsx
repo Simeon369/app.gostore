@@ -1,24 +1,96 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Rocket } from "lucide-react";
+import { CheckCircle2, Loader2, Rocket, Store, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { isValidStoreSlug, slugifyStoreName } from "@/lib/store-slug";
+
+type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
 export default function SignupForm() {
+  const [storeName, setStoreName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
   const router = useRouter();
   const supabase = createClient();
+
+  const slug = useMemo(() => slugifyStoreName(storeName), [storeName]);
+  const appHost =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, "") ||
+    "app-gostore.vercel.app";
+
+  useEffect(() => {
+    if (!storeName.trim()) {
+      setSlugStatus("idle");
+      return;
+    }
+
+    if (!isValidStoreSlug(slug)) {
+      setSlugStatus("invalid");
+      return;
+    }
+
+    setSlugStatus("checking");
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/stores/check-slug?slug=${encodeURIComponent(slug)}`);
+        const data = await res.json();
+        if (!res.ok) {
+          setSlugStatus("invalid");
+          return;
+        }
+        setSlugStatus(data.available ? "available" : "taken");
+      } catch {
+        setSlugStatus("invalid");
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [storeName, slug]);
+
+  const checkSlugAvailable = async (value: string): Promise<boolean> => {
+    const res = await fetch(`/api/stores/check-slug?slug=${encodeURIComponent(value)}`);
+    const data = await res.json();
+    return res.ok && data.available === true;
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    const trimmedStoreName = storeName.trim();
+
+    if (!trimmedStoreName) {
+      setError("Please enter a store name.");
+      setLoading(false);
+      return;
+    }
+
+    if (!isValidStoreSlug(slug)) {
+      setError("Choose a valid store name (letters and numbers, at least 2 characters).");
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
+
+    if (slugStatus === "taken") {
+      setError("That store name is already taken. Try another one.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const settingsRes = await fetch("/api/platform/settings");
@@ -28,6 +100,14 @@ export default function SignupForm() {
           process.env.NEXT_PUBLIC_MARKETING_URL?.replace(/\/$/, "") ||
           "https://home-gostore.vercel.app";
         window.location.href = `${marketingBase}/join`;
+        return;
+      }
+
+      const stillAvailable = await checkSlugAvailable(slug);
+      if (!stillAvailable) {
+        setSlugStatus("taken");
+        setError("That store name was just taken. Please choose another.");
+        setLoading(false);
         return;
       }
 
@@ -42,6 +122,11 @@ export default function SignupForm() {
         return;
       }
 
+      sessionStorage.setItem(
+        "gostore_signup_store",
+        JSON.stringify({ storeName: trimmedStoreName, slug }),
+      );
+
       router.push("/onboarding");
       router.refresh();
     } catch {
@@ -49,6 +134,32 @@ export default function SignupForm() {
       setLoading(false);
     }
   };
+
+  const slugMessage = (() => {
+    if (!storeName.trim()) return null;
+    if (slugStatus === "checking") {
+      return { tone: "muted" as const, text: "Checking availability..." };
+    }
+    if (slugStatus === "available") {
+      return { tone: "success" as const, text: "Store name is available" };
+    }
+    if (slugStatus === "taken") {
+      return { tone: "error" as const, text: "This store name is already taken" };
+    }
+    if (slugStatus === "invalid") {
+      return {
+        tone: "error" as const,
+        text: "Use letters and numbers only (min. 2 characters)",
+      };
+    }
+    return null;
+  })();
+
+  const canSubmit =
+    !loading &&
+    slugStatus === "available" &&
+    password.length >= 6 &&
+    password === confirmPassword;
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6 bg-background relative overflow-y-auto py-12">
@@ -69,6 +180,44 @@ export default function SignupForm() {
           <form onSubmit={handleSignup} className="flex flex-col gap-6">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-muted-foreground ml-1">Store Name</label>
+                <div className="relative">
+                  <Store className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    placeholder="e.g. Kemi's Hair Bundles"
+                    required
+                    className="w-full pl-12 pr-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground"
+                  />
+                </div>
+                {slug && (
+                  <p className="text-xs text-muted-foreground ml-1">
+                    {appHost}/store/{slug}
+                  </p>
+                )}
+                {slugMessage && (
+                  <p
+                    className={`text-xs font-medium ml-1 flex items-center gap-1.5 ${
+                      slugMessage.tone === "success"
+                        ? "text-primary"
+                        : slugMessage.tone === "error"
+                          ? "text-red-400"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    {slugStatus === "checking" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    {slugStatus === "available" && <CheckCircle2 className="w-3.5 h-3.5" />}
+                    {(slugStatus === "taken" || slugStatus === "invalid") && (
+                      <XCircle className="w-3.5 h-3.5" />
+                    )}
+                    {slugMessage.text}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold text-muted-foreground ml-1">Email Address</label>
                 <input
                   type="email"
@@ -79,6 +228,7 @@ export default function SignupForm() {
                   className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground"
                 />
               </div>
+
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold text-muted-foreground ml-1">Password</label>
                 <input
@@ -91,6 +241,24 @@ export default function SignupForm() {
                   className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground"
                 />
               </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-muted-foreground ml-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter your password"
+                  required
+                  minLength={6}
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground"
+                />
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-xs text-red-400 font-medium ml-1">Passwords do not match</p>
+                )}
+              </div>
             </div>
 
             {error && (
@@ -101,7 +269,7 @@ export default function SignupForm() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={!canSubmit}
               className="w-full py-4 rounded-2xl brand-gradient text-primary-foreground font-bold text-lg flex items-center justify-center gap-2 hover:shadow-[0_0_24px_rgba(158,226,55,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5" />}

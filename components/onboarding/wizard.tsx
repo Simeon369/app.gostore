@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
+import { slugifyStoreName } from "@/lib/store-slug";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, '');
@@ -186,6 +187,21 @@ export function OnboardingWizard() {
     { label: "Other", value: "Other" }
   ];
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("gostore_signup_store");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { storeName?: string };
+        if (parsed.storeName) {
+          setStoreName(parsed.storeName);
+        }
+        sessionStorage.removeItem("gostore_signup_store");
+      }
+    } catch {
+      // ignore invalid session data
+    }
+  }, []);
+
   // Fetch banks from Paystack API via server route
   useEffect(() => {
     async function loadBanks() {
@@ -249,7 +265,17 @@ export function OnboardingWizard() {
         throw new Error("No user found. Please login.");
       }
 
-      const slug = storeName.toLowerCase().replace(/\s+/g, '-');
+      const slug = slugifyStoreName(storeName);
+      const { data: existingStore } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (existingStore) {
+        throw new Error("That store name is already taken. Go back and choose another.");
+      }
+
       const formattedWhatsapp = formatWhatsAppNumber(whatsapp);
       const finalCategory = category === "Other" ? otherCategory : category;
 
@@ -290,7 +316,7 @@ export function OnboardingWizard() {
   };
 
   const copyLink = () => {
-    const slug = storeName.toLowerCase().replace(/\s+/g, '-');
+    const slug = slugifyStoreName(storeName);
     const url = `https://app-gostore.vercel.app/store/${slug}?src=wa`;
     navigator.clipboard.writeText(url);
     alert("Link copied!");
@@ -360,7 +386,7 @@ export function OnboardingWizard() {
                 />
                 {storeName && (
                   <p className="text-xs text-primary font-medium ml-1">
-                    Your URL: app-gostore.vercel.app/store/{storeName.toLowerCase().replace(/\s+/g, '-')}
+                    Your URL: app-gostore.vercel.app/store/{slugifyStoreName(storeName)}
                   </p>
                 )}
               </div>
@@ -599,7 +625,7 @@ export function OnboardingWizard() {
                   <input 
                     type="text" 
                     readOnly
-                    value={`https://app-gostore.vercel.app/store/${storeName.toLowerCase().replace(/\s+/g, '-')}?src=wa`}
+                    value={`https://app-gostore.vercel.app/store/${slugifyStoreName(storeName)}?src=wa`}
                     className="flex-1 bg-background px-4 py-3 rounded-xl border border-border text-sm font-bold text-muted-foreground outline-none"
                   />
                   <button onClick={copyLink} className="p-3 bg-primary text-primary-foreground rounded-xl hover:scale-105 transition-all">
