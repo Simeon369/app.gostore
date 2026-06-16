@@ -21,11 +21,15 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   maintenance_mode: false,
 };
 
-export function getMarketingWaitlistUrl(): string {
-  const base =
+export function getMarketingHomeUrl(): string {
+  return (
     process.env.NEXT_PUBLIC_MARKETING_URL?.replace(/\/$/, "") ||
-    "https://home-gostore.vercel.app";
-  return `${base}/join`;
+    "https://home-gostore.vercel.app"
+  );
+}
+
+export function getMarketingWaitlistUrl(): string {
+  return `${getMarketingHomeUrl()}/join`;
 }
 
 export async function getPlatformSettings(): Promise<PlatformSettings> {

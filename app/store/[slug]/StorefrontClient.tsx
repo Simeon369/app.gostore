@@ -24,6 +24,7 @@ import { CheckoutModal } from "@/components/store/checkout-modal";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { isManualTransferMode } from "@/lib/payment-config";
+import { getMarketingHomeUrl } from "@/lib/platform-settings";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, "");
@@ -285,31 +286,21 @@ export default function StorefrontClient() {
       {/* Top Navigation */}
       <nav className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="px-6 md:px-10 max-w-6xl mx-auto py-4 flex items-center justify-between">
-          <Link href={`/store/${store.slug}${querySuffix}`} className="flex items-center gap-2">
+          <a href={getMarketingHomeUrl()} className="flex items-center gap-2">
             <div className="rounded-full overflow-hidden">
-              {store.logo ? (
-                <Image
-                  src={store.logo}
-                  alt={store.name}
-                  width={40}
-                  height={40}
-                  className="w-10 h-10 object-cover"
-                />
-              ) : (
-                <Image
-                  src="/gostore-logo.png"
-                  alt="GoStore"
-                  width={24}
-                  height={24}
-                  className="w-10 h-10 "
-                />
-              )}
+              <Image
+                src="/gostore-logo.png"
+                alt="GoStore"
+                width={24}
+                height={24}
+                className="w-10 h-10"
+              />
             </div>
 
             <span className="text-xs font-black uppercase tracking-wider text-primary hidden sm:inline">
-              {store.name}
+              GoStore
             </span>
-          </Link>
+          </a>
 
           <div className="flex items-center gap-3">
             <button
