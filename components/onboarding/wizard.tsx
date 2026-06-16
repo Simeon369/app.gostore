@@ -231,17 +231,12 @@ export function OnboardingWizard() {
       const formattedWhatsapp = formatWhatsAppNumber(whatsapp);
       const finalCategory = category === "Other" ? otherCategory : category;
 
-      if (!bankAccount.isVerified || !bankAccount.accountName) {
-        throw new Error("Please verify your bank account with Paystack before launching.");
-      }
-
-      // Re-check with Paystack before saving
-      const verifyRes = await fetch(
-        `/api/banks/validate?accountNumber=${bankAccount.accountNumber}&bankCode=${bankAccount.bankCode}`,
-      );
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok || !verifyData.accountName) {
-        throw new Error(verifyData.error || "Bank account could not be verified. Please try again.");
+      if (
+        !bankAccount.bankCode ||
+        bankAccount.accountNumber.length !== 10 ||
+        !bankAccount.accountName.trim()
+      ) {
+        throw new Error("Please complete your bank details before launching.");
       }
 
       // 1. Create the store
@@ -256,7 +251,7 @@ export function OnboardingWizard() {
           bank_name: bankAccount.bankName,
           bank_code: bankAccount.bankCode,
           account_number: bankAccount.accountNumber,
-          account_name: verifyData.accountName,
+          account_name: bankAccount.accountName,
           channels: socials,
           status: "Live",
         })
@@ -282,7 +277,7 @@ export function OnboardingWizard() {
             bankCode: bankAccount.bankCode,
             bankName: bankAccount.bankName,
             accountNumber: bankAccount.accountNumber,
-            accountName: verifyData.accountName,
+            accountName: bankAccount.accountName,
             storeId: newStore.id,
           }),
         });

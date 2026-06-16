@@ -116,8 +116,6 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
   const [bankList, setBankList] = useState<BankOption[]>([]);
   const [loadingBanks, setLoadingBanks] = useState(true);
   const [banksError, setBanksError] = useState<string | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadBanks() {
@@ -146,74 +144,15 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
     loadBanks();
   }, []);
 
-  const verifyAccount = async (
-    accountNumber: string,
-    bankCode: string,
-    bankName: string,
-  ) => {
-    if (accountNumber.length !== 10 || !bankCode) return;
-
-    setVerifying(true);
-    setVerifyError(null);
-    onChange({
-      bankName,
-      bankCode,
-      accountNumber,
-      accountName: "",
-      isVerified: false,
-    });
-
-    try {
-      const res = await fetch(
-        `/api/banks/validate?accountNumber=${accountNumber}&bankCode=${bankCode}`,
-      );
-      const data = await res.json();
-
-      if (!res.ok || !data.accountName) {
-        throw new Error(data.error || "Could not verify this account");
-      }
-
-      onChange({
-        bankName,
-        bankCode,
-        accountNumber,
-        accountName: data.accountName,
-        isVerified: true,
-      });
-    } catch (err) {
-      setVerifyError(err instanceof Error ? err.message : "Verification failed");
-      onChange({
-        bankName,
-        bankCode,
-        accountNumber,
-        accountName: "",
-        isVerified: false,
-      });
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!value.bankCode || value.accountNumber.length !== 10) return;
-
-    const timer = setTimeout(() => {
-      verifyAccount(value.accountNumber, value.bankCode, value.bankName);
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value.bankCode, value.accountNumber]);
-
   const handleBankSelect = (opt: BankOption) => {
     onChange({
       bankName: opt.value,
       bankCode: opt.code,
       accountNumber: value.accountNumber,
-      accountName: "",
-      isVerified: false,
+      accountName: value.accountName,
+      // Consider the account "complete" once all fields are filled.
+      isVerified: !!(value.accountNumber.length === 10 && value.accountName),
     });
-    setVerifyError(null);
   };
 
   const handleAccountNumberChange = (raw: string) => {
@@ -221,10 +160,9 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
     onChange({
       ...value,
       accountNumber: clean,
-      accountName: "",
-      isVerified: false,
+      // Mark as "verified" in the sense of user-provided + complete.
+      isVerified: !!(clean.length === 10 && value.bankCode && value.accountName),
     });
-    setVerifyError(null);
   };
 
   return (
@@ -248,7 +186,7 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
             options={bankList}
             value={value.bankName}
             onChange={handleBankSelect}
-            disabled={verifying}
+            disabled={false}
           />
         )}
       </div>
@@ -269,35 +207,34 @@ export function BankAccountVerification({ value, onChange }: BankAccountVerifica
         />
       </div>
 
-      {verifying && (
-        <div className="flex items-center gap-3 text-primary text-xs font-black uppercase tracking-widest bg-primary/10 p-4 rounded-2xl border border-primary/20 animate-pulse">
-          <Loader2 className="w-4 h-4 animate-spin" /> Verifying ...
-        </div>
-      )}
+      <div className="flex flex-col gap-2">
+        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+          Account Name (as on your bank)
+        </label>
+        <input
+          type="text"
+          value={value.accountName}
+          onChange={(e) =>
+            onChange({
+              ...value,
+              accountName: e.target.value,
+              isVerified: !!(
+                e.target.value.trim() &&
+                value.bankCode &&
+                value.accountNumber.length === 10
+              ),
+            })
+          }
+          placeholder="e.g. ADEMOLA SIMEON OGUNYINKA"
+          disabled={!value.bankCode}
+          className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground placeholder:text-muted-foreground/50 shadow-sm disabled:opacity-50 uppercase"
+        />
+      </div>
 
-      {verifyError && !verifying && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3 text-red-500 text-xs font-medium bg-red-500/10 p-4 rounded-2xl border border-red-500/20">
-            <AlertCircle className="w-4 h-4 shrink-0" /> {verifyError}
-          </div>
-          {value.accountNumber.length === 10 && value.bankCode && (
-            <button
-              type="button"
-              onClick={() =>
-                verifyAccount(value.accountNumber, value.bankCode, value.bankName)
-              }
-              className="text-xs font-black uppercase tracking-widest text-primary hover:underline w-fit"
-            >
-              Retry verification
-            </button>
-          )}
-        </div>
-      )}
-
-      {value.isVerified && value.accountName && !verifying && (
+      {value.isVerified && value.accountName && (
         <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-emerald-500 ml-1">
-            Verified
+          <label className="text-[10px] font-black uppercase tracking-widest text-emerald-500 ml-1 flex items-center gap-2">
+            <ShieldCheck className="w-3 h-3" /> Confirmed by you
           </label>
           <div className="w-full px-5 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 font-black flex items-center justify-between shadow-sm">
             <span>{value.accountName}</span>

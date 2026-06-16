@@ -163,8 +163,12 @@ export default function SettingsPage() {
 
   const handleSavePayout = async () => {
     if (!store) return;
-    if (!bankAccount.bankCode || !bankAccount.accountNumber || !bankAccount.isVerified || !bankAccount.accountName) {
-      toast.error("Please verify your bank account before saving");
+    if (
+      !bankAccount.bankCode ||
+      bankAccount.accountNumber.length !== 10 ||
+      !bankAccount.accountName.trim()
+    ) {
+      toast.error("Please complete your bank details before saving");
       return;
     }
     setSaving(true);
