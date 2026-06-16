@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.stores (
     status TEXT DEFAULT 'Live',
     color TEXT,
     logo TEXT,
+    logo_path TEXT,
     description TEXT,
     delivery_zones JSONB DEFAULT '[]'::jsonb,
     delivery_payment_option TEXT DEFAULT 'checkout',

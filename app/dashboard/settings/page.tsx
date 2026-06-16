@@ -6,8 +6,14 @@ import { useState, useEffect } from "react";
 import { createClient } from "../../../utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { cn } from "@/utils/cn";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { StoreLogoUpload } from "@/components/store-logo-upload";
+import {
+  resolveLogoPathFromUrl,
+  uploadStoreLogo,
+  STORE_LOGOS_BUCKET,
+} from "@/lib/store-logo";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, '');
@@ -22,6 +28,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const queryClient = useQueryClient();
 
   // Store Details State
   const [storeName, setStoreName] = useState("");
@@ -30,6 +37,9 @@ export default function SettingsPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [socials, setSocials] = useState({ email: "", instagram: "", tiktok: "" });
   const [channels, setChannels] = useState({ whatsapp: true, instagram: false, tiktok: false });
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
 
   // Bank State
   const [banks, setBanks] = useState<any[]>([]);
@@ -80,6 +90,9 @@ export default function SettingsPage() {
       setAccountName(store.account_name || "");
       setDeliveryZones(store.delivery_zones || []);
       setDeliveryPaymentOption(store.delivery_payment_option || "checkout");
+      setLogoPreview(store.logo || null);
+      setLogoFile(null);
+      setRemoveLogo(false);
     }
   }, [store]);
 
@@ -124,6 +137,24 @@ export default function SettingsPage() {
     if (!store) return;
     setSaving(true);
     try {
+      let logo = store.logo;
+      let logoPath = store.logo_path || resolveLogoPathFromUrl(store.logo);
+
+      if (logoFile) {
+        const uploaded = await uploadStoreLogo(
+          supabase,
+          store.id,
+          logoFile,
+          logoPath,
+        );
+        logo = uploaded.logoUrl;
+        logoPath = uploaded.logoPath;
+      } else if (removeLogo && logoPath) {
+        await supabase.storage.from(STORE_LOGOS_BUCKET).remove([logoPath]);
+        logo = null;
+        logoPath = null;
+      }
+
       const { error } = await supabase
         .from('stores')
         .update({
@@ -132,11 +163,16 @@ export default function SettingsPage() {
           description: storeDesc,
           whatsapp: formatWhatsAppNumber(whatsapp),
           socials: socials,
-          channels: channels
+          channels: channels,
+          logo,
+          logo_path: logoPath,
         })
         .eq('id', store.id);
 
       if (error) throw error;
+      setLogoFile(null);
+      setRemoveLogo(false);
+      queryClient.invalidateQueries({ queryKey: ['settings-store'] });
       toast.success("Store details updated successfully!");
     } catch (err: any) {
       toast.error("Failed to update store: " + err.message);
@@ -400,21 +436,25 @@ export default function SettingsPage() {
               <div className="h-[1px] bg-border my-2" />
 
               <div>
-                <h3 className="text-lg lg:text-xl font-black mb-1 text-foreground">Branding <span className="text-xs ml-2 text-primary uppercase tracking-widest font-black">Coming Soon</span></h3>
-                <p className="text-xs text-muted-foreground mb-4">Customize your store's visual identity.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-50 pointer-events-none">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Color Theme</label>
-                    <div className="w-full px-5 py-4 rounded-2xl bg-muted border border-border flex items-center justify-between">
-                      <span className="font-bold text-sm">Default Dark</span>
-                      <div className="w-6 h-6 rounded-full bg-primary" />
-                    </div>
-                  </div>
+                <h3 className="text-lg lg:text-xl font-black mb-1 text-foreground">Branding</h3>
+                <p className="text-xs text-muted-foreground mb-4">Customize your store&apos;s visual identity.</p>
+                <div className="max-w-sm">
                   <div className="flex flex-col gap-2">
                     <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Store Logo</label>
-                    <div className="w-full px-5 py-4 rounded-2xl bg-muted border border-border font-bold text-sm text-center border-dashed">
-                      Upload Image (Max 2MB)
-                    </div>
+                    <StoreLogoUpload
+                      compact
+                      preview={logoPreview}
+                      onFileSelect={(file, previewUrl) => {
+                        setLogoFile(file);
+                        setLogoPreview(previewUrl);
+                        setRemoveLogo(false);
+                      }}
+                      onClear={() => {
+                        setLogoFile(null);
+                        setLogoPreview(null);
+                        setRemoveLogo(true);
+                      }}
+                    />
                   </div>
                 </div>
               </div>

@@ -23,6 +23,8 @@ import {
   type BankAccountFields,
 } from "@/components/bank-account-verification";
 import { getPaymentMode } from "@/lib/payment-config";
+import { StoreLogoUpload } from "@/components/store-logo-upload";
+import { uploadStoreLogo } from "@/lib/store-logo";
 
 const formatWhatsAppNumber = (phone: string): string => {
   const clean = phone.replace(/\D/g, '');
@@ -169,6 +171,8 @@ export function OnboardingWizard() {
   const [whatsapp, setWhatsapp] = useState("");
   const [category, setCategory] = useState("Fashion & Apparel");
   const [otherCategory, setOtherCategory] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Step 2 State — verified via Paystack resolve API
   const [bankAccount, setBankAccount] = useState<BankAccountFields>({
@@ -260,6 +264,15 @@ export function OnboardingWizard() {
         .single();
 
       if (storeError) throw storeError;
+
+      if (logoFile && newStore?.id) {
+        const { logoUrl, logoPath } = await uploadStoreLogo(supabase, newStore.id, logoFile);
+        const { error: logoError } = await supabase
+          .from("stores")
+          .update({ logo: logoUrl, logo_path: logoPath })
+          .eq("id", newStore.id);
+        if (logoError) throw logoError;
+      }
 
       if (getPaymentMode() === "paystack" && newStore?.id) {
         const payoutRes = await fetch("/api/payout/register", {
@@ -356,6 +369,21 @@ export function OnboardingWizard() {
               exit="exit"
               className="flex flex-col gap-6"
             >
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Store Logo <span className="normal-case font-medium text-muted-foreground/70">(optional)</span></label>
+                <StoreLogoUpload
+                  preview={logoPreview}
+                  onFileSelect={(file, previewUrl) => {
+                    setLogoFile(file);
+                    setLogoPreview(previewUrl);
+                  }}
+                  onClear={() => {
+                    setLogoFile(null);
+                    setLogoPreview(null);
+                  }}
+                />
+              </div>
+
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
                   <Store className="w-3 h-3" /> Store Name
