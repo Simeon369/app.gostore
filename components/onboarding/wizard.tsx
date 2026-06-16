@@ -323,7 +323,7 @@ export function OnboardingWizard() {
     <div className="w-full max-w-xl mx-auto bg-card border border-border rounded-[40px] overflow-hidden shadow-2xl relative min-h-[500px] flex flex-col transition-all duration-300">
       {/* Header */}
       <div className="p-8 border-b border-border bg-card relative z-10 rounded-t-[40px]">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col items-center justify-center gap-4 mb-8">
           <div className="flex gap-2">
             {[1, 2, 3, 4].map((i) => (
               <div 
@@ -558,7 +558,7 @@ export function OnboardingWizard() {
 
               <div className="w-full bg-muted border border-border rounded-2xl p-4 flex flex-col gap-3">
                 <p className="text-xs font-black uppercase tracking-widest text-muted-foreground text-left">Your WhatsApp Link</p>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col items-center justify-center gap-4">
                   <input 
                     type="text" 
                     readOnly
