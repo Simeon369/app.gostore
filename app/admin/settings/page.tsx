@@ -1,5 +1,6 @@
-import { ShieldCheck, Zap } from "lucide-react";
+import { KeyRound, ShieldCheck, Zap } from "lucide-react";
 import { PlatformSettingsForm } from "@/components/admin/platform-settings-form";
+import { InviteCodesManager } from "@/components/admin/invite-codes-manager";
 import { getPlatformSettings } from "@/lib/platform-settings";
 
 export default async function AdminSettingsPage() {
@@ -27,6 +28,20 @@ export default async function AdminSettingsPage() {
           </div>
 
           <PlatformSettingsForm initialSettings={settings} />
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+              <KeyRound className="w-5 h-5 text-violet-500" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">Beta Invite Codes</h2>
+              <p className="text-xs text-muted-foreground">Create one-time signup codes like GST-9XQ2-P7.</p>
+            </div>
+          </div>
+
+          <InviteCodesManager />
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">

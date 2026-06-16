@@ -13,6 +13,7 @@ type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 export default function SignupForm() {
   const [storeName, setStoreName] = useState("");
   const [email, setEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,6 +68,7 @@ export default function SignupForm() {
     setError(null);
 
     const trimmedStoreName = storeName.trim();
+    const normalizedInviteCode = inviteCode.trim().toUpperCase();
 
     if (!trimmedStoreName) {
       setError("Please enter a store name.");
@@ -76,6 +78,12 @@ export default function SignupForm() {
 
     if (!isValidStoreSlug(slug)) {
       setError("Choose a valid store name (letters and numbers, at least 2 characters).");
+      setLoading(false);
+      return;
+    }
+
+    if (!normalizedInviteCode) {
+      setError("Please enter your invite code.");
       setLoading(false);
       return;
     }
@@ -111,14 +119,31 @@ export default function SignupForm() {
         return;
       }
 
-      const { error: signUpError } = await supabase.auth.signUp({
+      const signUpRes = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          inviteCode: normalizedInviteCode,
+        }),
+      });
+      const signUpData = await signUpRes.json();
+
+      if (!signUpRes.ok) {
+        setError(signUpData.error || "Could not create account.");
+        setLoading(false);
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
-      if (signUpError) {
-        setError(signUpError.message);
+      if (signInError) {
+        setError("Account created. Please login to continue.");
         setLoading(false);
+        router.push("/login");
         return;
       }
 
@@ -157,6 +182,7 @@ export default function SignupForm() {
 
   const canSubmit =
     !loading &&
+    inviteCode.trim().length > 0 &&
     slugStatus === "available" &&
     password.length >= 6 &&
     password === confirmPassword;
@@ -227,6 +253,21 @@ export default function SignupForm() {
                   required
                   className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground"
                 />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-muted-foreground ml-1">Invite Code</label>
+                <input
+                  type="text"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  placeholder="GST-9XQ2-P7"
+                  required
+                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground uppercase tracking-widest focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground ml-1">
+                  Signup is invite-only. Ask GoStore for a valid one-time code.
+                </p>
               </div>
 
               <div className="flex flex-col gap-2">

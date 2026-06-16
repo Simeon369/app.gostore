@@ -78,7 +78,7 @@ export function PlatformSettingsForm({ initialSettings }: PlatformSettingsFormPr
           <p className="font-semibold text-sm text-foreground">Allow New Signups</p>
           <p className="text-xs text-muted-foreground mt-1">
             When off, <span className="font-mono">/signup</span> sends users to the marketing waitlist.
-            When on, vendors can create accounts and start onboarding.
+            When on, signup stays invite-only and requires a valid code.
           </p>
         </div>
         <Toggle
