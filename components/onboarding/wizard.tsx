@@ -25,6 +25,8 @@ import {
 import { getPaymentMode } from "@/lib/payment-config";
 import { StoreLogoUpload } from "@/components/store-logo-upload";
 import { uploadStoreLogo } from "@/lib/store-logo";
+import { FaInstagram, FaTiktok, FaWhatsapp } from "react-icons/fa";
+import { toast } from "sonner";
 
 const formatWhatsAppNumber = (phone: string): string => {
   const clean = phone.replace(/\D/g, '');
@@ -33,33 +35,6 @@ const formatWhatsAppNumber = (phone: string): string => {
   if (!clean) return '';
   return '234' + clean;
 };
-
-// Brand Icons
-function WhatsAppIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={cn("w-6 h-6 fill-current", className)}>
-      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.118-2.905-6.993-1.876-1.875-4.355-2.907-6.992-2.908-5.44 0-9.866 4.418-9.87 9.865-.001 1.645.428 3.25 1.241 4.667l-.993 3.627 3.731-.979zm11.587-6.425c-.29-.145-1.72-.848-1.986-.944-.266-.096-.46-.145-.654.145-.193.291-.748.944-.919 1.138-.17.194-.34.218-.63.073-.29-.145-1.229-.453-2.34-1.444-.863-.77-1.446-1.72-1.615-2.012-.17-.29-.018-.448.127-.592.13-.13.29-.34.436-.509.145-.17.193-.29.29-.485.097-.194.048-.364-.025-.509-.072-.145-.654-1.577-.896-2.158-.236-.569-.475-.492-.654-.5-.17-.008-.364-.01-.557-.01-.194 0-.509.072-.774.364-.266.291-1.015.993-1.015 2.422 0 1.43 1.039 2.81 1.184 3.004.145.194 2.045 3.123 4.954 4.378.692.298 1.233.477 1.654.61.695.22 1.328.19 1.829.115.558-.085 1.72-.702 1.962-1.38.242-.678.242-1.26.17-1.38-.073-.12-.266-.194-.557-.34z" />
-    </svg>
-  );
-}
-
-function InstagramIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={cn("w-6 h-6 fill-none stroke-current stroke-2", className)}>
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-    </svg>
-  );
-}
-
-function TikTokIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={cn("w-6 h-6 fill-current", className)}>
-      <path d="M12.525.02c1.31-.032 2.612-.008 3.914-.013.116 1.177.587 2.32 1.393 3.175.764.81 1.792 1.34 2.914 1.488V8.47c-1.322-.057-2.617-.488-3.7-.1.013 3.655.012 7.31-.005 10.965-.05 1.573-.66 3.11-1.785 4.168-1.57 1.468-3.957 2.007-6.02 1.442-2.316-.628-4.22-2.688-4.63-5.06-.575-3.195 1.405-6.527 4.546-7.228.324-.075.656-.118.988-.135v3.9c-.83.053-1.688.388-2.222.998-.823.95-.733 2.508.204 3.328 1.05.9 2.766.723 3.593-.418.318-.456.452-.996.442-1.558.005-4.475-.002-8.95.008-13.425.01-.137-.015-.29-.028-.426z" />
-    </svg>
-  );
-}
 
 // Custom Searchable Dropdown / Select Component
 interface Option {
@@ -301,7 +276,7 @@ export function OnboardingWizard() {
     } catch (error: unknown) {
       console.error("Error launching store:", error);
       const message = error instanceof Error ? error.message : "Failed to create store. Please try again.";
-      alert(message);
+      toast.error(message);
       setLoading(false);
     }
   };
@@ -310,7 +285,7 @@ export function OnboardingWizard() {
     const slug = slugifyStoreName(storeName);
     const url = `https://app-gostore.vercel.app/store/${slug}?src=wa`;
     navigator.clipboard.writeText(url);
-    alert("Link copied!");
+    toast.success("Link copied!");
   };
 
   const stepVariants = {
@@ -470,7 +445,7 @@ export function OnboardingWizard() {
               <div className="bg-muted p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
-                    <WhatsAppIcon className="w-6 h-6" />
+                    <FaWhatsapp className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="font-bold text-foreground">WhatsApp</p>
@@ -494,7 +469,7 @@ export function OnboardingWizard() {
                     "p-3 rounded-xl transition-all",
                     socials.instagram ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                   )}>
-                    <InstagramIcon className="w-6 h-6" />
+                    <FaInstagram className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="font-bold text-foreground">Instagram</p>
@@ -521,7 +496,7 @@ export function OnboardingWizard() {
                     "p-3 rounded-xl transition-all",
                     socials.tiktok ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                   )}>
-                    <TikTokIcon className="w-6 h-6" />
+                    <FaTiktok className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="font-bold text-foreground">TikTok</p>
