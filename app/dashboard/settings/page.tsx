@@ -10,6 +10,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { StoreLogoUpload } from "@/components/store-logo-upload";
 import {
+  BankAccountVerification,
+  type BankAccountFields,
+} from "@/components/bank-account-verification";
+import {
   resolveLogoPathFromUrl,
   uploadStoreLogo,
   STORE_LOGOS_BUCKET,
@@ -42,11 +46,13 @@ export default function SettingsPage() {
   const [removeLogo, setRemoveLogo] = useState(false);
 
   // Bank State
-  const [banks, setBanks] = useState<any[]>([]);
-  const [selectedBank, setSelectedBank] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [accountName, setAccountName] = useState("");
-  const [isValidating, setIsValidating] = useState(false);
+  const [bankAccount, setBankAccount] = useState<BankAccountFields>({
+    bankName: "",
+    bankCode: "",
+    accountNumber: "",
+    accountName: "",
+    isVerified: false,
+  });
   const [isEditingBank, setIsEditingBank] = useState(false);
 
   // Delivery State
@@ -85,9 +91,13 @@ export default function SettingsPage() {
         tiktok: store.socials?.tiktok || ""
       });
       setChannels(store.channels || { whatsapp: true, instagram: false, tiktok: false });
-      setSelectedBank(store.bank_code || "");
-      setAccountNumber(store.account_number || "");
-      setAccountName(store.account_name || "");
+      setBankAccount({
+        bankName: store.bank_name || "",
+        bankCode: store.bank_code || "",
+        accountNumber: store.account_number || "",
+        accountName: store.account_name || "",
+        isVerified: !!(store.bank_code && store.account_number && store.account_name),
+      });
       setDeliveryZones(store.delivery_zones || []);
       setDeliveryPaymentOption(store.delivery_payment_option || "checkout");
       setLogoPreview(store.logo || null);
@@ -102,36 +112,6 @@ export default function SettingsPage() {
     { id: "delivery", name: "Delivery", icon: Truck },
     { id: "security", name: "Security", icon: Shield },
   ];
-
-  // Fetch banks on mount
-  useEffect(() => {
-    fetch('/api/banks')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setBanks(data);
-      })
-      .catch(err => console.error("Failed to fetch banks:", err));
-  }, []);
-
-  // Automatic account validation
-  useEffect(() => {
-    if (selectedBank && accountNumber.length === 10) {
-      const validate = async () => {
-        setIsValidating(true);
-        try {
-          const res = await fetch(`/api/banks/validate?accountNumber=${accountNumber}&bankCode=${selectedBank}`);
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Validation failed");
-          if (data.accountName) setAccountName(data.accountName);
-        } catch (err) {
-          console.error("Validation error:", err);
-        } finally {
-          setIsValidating(false);
-        }
-      };
-      validate();
-    }
-  }, [selectedBank, accountNumber]);
 
   const handleSaveStoreDetails = async () => {
     if (!store) return;
@@ -182,21 +162,21 @@ export default function SettingsPage() {
   };
 
   const handleSavePayout = async () => {
-    if (!selectedBank || !accountNumber || !accountName) {
-      toast.error("Please fill all bank details");
+    if (!store) return;
+    if (!bankAccount.bankCode || !bankAccount.accountNumber || !bankAccount.isVerified || !bankAccount.accountName) {
+      toast.error("Please verify your bank account before saving");
       return;
     }
     setSaving(true);
     try {
-      const bank = banks.find(b => b.code === selectedBank);
       const res = await fetch('/api/payout/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bankCode: selectedBank,
-          bankName: bank?.name || selectedBank,
-          accountNumber,
-          accountName,
+          bankCode: bankAccount.bankCode,
+          bankName: bankAccount.bankName,
+          accountNumber: bankAccount.accountNumber,
+          accountName: bankAccount.accountName,
           storeId: store.id
         })
       });
@@ -205,6 +185,7 @@ export default function SettingsPage() {
       if (data.status === 'success') {
         toast.success("Settlement account registered successfully!");
         setIsEditingBank(false);
+        queryClient.invalidateQueries({ queryKey: ['settings-store'] });
         router.refresh();
       } else {
         throw new Error(data.error || "Failed to register account");
@@ -496,63 +477,23 @@ export default function SettingsPage() {
 
               {(!store?.account_number || isEditingBank) ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bank Name</label>
-                      <div className="relative">
-                        <select 
-                          value={selectedBank}
-                          onChange={(e) => setSelectedBank(e.target.value)}
-                          className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold appearance-none text-foreground text-sm lg:text-base pr-10"
-                        >
-                          <option value="">Select Bank</option>
-                          {banks.map((bank, index) => (
-                            <option key={`${bank.code}-${index}`} value={bank.code}>{bank.name}</option>
-                          ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Number</label>
-                      <input 
-                        type="text" 
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        maxLength={10}
-                        placeholder="0000000000"
-                        className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground text-sm lg:text-base"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Name</label>
-                    <div className="relative">
-                      <input 
-                        type="text" 
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        placeholder={isValidating ? "Validating..." : "John Doe"}
-                        className={cn(
-                          "w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground text-sm lg:text-base",
-                          isValidating && "opacity-50"
-                        )}
-                      />
-                      {isValidating && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <BankAccountVerification value={bankAccount} onChange={setBankAccount} />
 
                   <div className="mt-4 flex gap-4">
                     {store?.account_number && (
                       <button 
-                        onClick={() => setIsEditingBank(false)}
+                        onClick={() => {
+                          setIsEditingBank(false);
+                          if (store) {
+                            setBankAccount({
+                              bankName: store.bank_name || "",
+                              bankCode: store.bank_code || "",
+                              accountNumber: store.account_number || "",
+                              accountName: store.account_name || "",
+                              isVerified: !!(store.bank_code && store.account_number && store.account_name),
+                            });
+                          }
+                        }}
                         type="button"
                         className="px-8 py-5 rounded-[24px] bg-muted text-muted-foreground font-black hover:bg-muted transition-all text-xs lg:text-sm uppercase tracking-wider"
                       >
@@ -561,7 +502,7 @@ export default function SettingsPage() {
                     )}
                     <button 
                       onClick={handleSavePayout}
-                      disabled={saving}
+                      disabled={saving || !bankAccount.isVerified}
                       className="flex-1 px-8 py-5 rounded-[24px] brand-gradient text-primary-foreground font-black flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(158,226,55,0.3)] text-xs lg:text-sm uppercase tracking-wider disabled:opacity-50"
                     >
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Settlement Details"}
@@ -576,7 +517,16 @@ export default function SettingsPage() {
                     <p className="text-sm font-medium text-muted-foreground">{store.bank_name} • {store.account_number}</p>
                   </div>
                   <button 
-                    onClick={() => setIsEditingBank(true)}
+                    onClick={() => {
+                      setIsEditingBank(true);
+                      setBankAccount({
+                        bankName: store.bank_name || "",
+                        bankCode: store.bank_code || "",
+                        accountNumber: store.account_number || "",
+                        accountName: "",
+                        isVerified: false,
+                      });
+                    }}
                     type="button"
                     className="px-6 py-3 rounded-2xl bg-muted hover:bg-muted border border-border text-foreground text-xs lg:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap"
                   >

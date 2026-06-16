@@ -51,14 +51,13 @@ export async function validatePaystackAccount(
   const data = await response.json();
 
   if (!data.status) {
-    if (
-      PAYSTACK_SECRET_KEY.startsWith("sk_test_") &&
-      (data.message?.toLowerCase().includes("limit") ||
-        data.message?.toLowerCase().includes("test bank"))
-    ) {
-      return { account_number: cleanNumber, account_name: "Test Settlement Account" };
+    const message = data.message || "Could not resolve account";
+    if (PAYSTACK_SECRET_KEY.startsWith("sk_test_")) {
+      throw new Error(
+        `${message} Bank name lookup requires live Paystack keys (sk_live_). Test keys cannot resolve real account names.`,
+      );
     }
-    throw new Error(data.message || "Could not resolve account");
+    throw new Error(message);
   }
 
   return data.data as PaystackResolvedAccount;
