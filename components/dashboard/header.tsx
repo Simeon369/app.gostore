@@ -3,13 +3,15 @@
 import { Bell, Search, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
+import Image from "next/image";
+import { Store } from "lucide-react";
 
 export function Header({
   user,
   store,
 }: {
   user: { email?: string } | null;
-  store: { name?: string } | null;
+  store: { name?: string; logo?: string | null } | null;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -35,6 +37,24 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card">
+            <div className="w-7 h-7 rounded-lg bg-muted overflow-hidden flex items-center justify-center">
+              {store?.logo ? (
+                <Image
+                  src={store.logo}
+                  alt={store?.name || "Store Logo"}
+                  width={28}
+                  height={28}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Store className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+            <span className="text-xs font-bold text-foreground truncate max-w-[140px]">
+              {store?.name || "Your Store"}
+            </span>
+          </div>
           <button className="p-2 hover:bg-muted rounded-xl transition-all relative group">
             <Bell className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
