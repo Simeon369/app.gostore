@@ -25,6 +25,7 @@ import { Instagram, TikTok } from "@/components/icons";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { isManualTransferMode } from "@/lib/payment-config";
+import { getLeadProductImageUrl, getProductImages } from "@/lib/product-images";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, "");
@@ -56,6 +57,7 @@ export default function ProductDetailsClient() {
   const [selectedType, setSelectedType] = useState<string>("");
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const variantsRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside the variants container
@@ -87,6 +89,10 @@ export default function ProductDetailsClient() {
     script.async = true;
     document.body.appendChild(script);
   }, []);
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [productId]);
 
   const { data: storeData, isLoading } = useQuery({
     queryKey: ["store-product", slug, productId],
@@ -242,6 +248,10 @@ export default function ProductDetailsClient() {
     );
   }
 
+  const productImages = getProductImages(product);
+  const activeImageUrl =
+    productImages[selectedImageIndex]?.url || getLeadProductImageUrl(product);
+
   const handleShareProduct = () => {
     if (!product || !store) return;
     const url = window.location.href;
@@ -378,35 +388,62 @@ export default function ProductDetailsClient() {
       {/* Product Details Container */}
       <main className="max-w-5xl mx-auto w-full px-6 py-8 flex-1 flex flex-col gap-8 md:gap-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
-          {/* Left Column: Product Image */}
-          <div className="w-full relative aspect-square bg-card rounded-[32px] border border-border overflow-hidden shadow-xl">
-            {product.image ? (
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority
-                className="object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
-                <ShoppingBag className="w-16 h-16 text-muted-foreground opacity-20" />
-              </div>
-            )}
+          {/* Left Column: Product Images */}
+          <div className="flex flex-col gap-3">
+            <div className="w-full relative aspect-square bg-card rounded-[32px] border border-border overflow-hidden shadow-xl">
+              {activeImageUrl ? (
+                <Image
+                  src={activeImageUrl}
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                  className="object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                  <ShoppingBag className="w-16 h-16 text-muted-foreground opacity-20" />
+                </div>
+              )}
 
-            {product.tag && (
-              <div
-                className={cn(
-                  "absolute top-4 left-4 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest z-10 shadow-lg",
-                  product.tag === "Sold Out"
-                    ? "bg-red-500 text-white"
-                    : product.tag === "Pre-order"
-                      ? "bg-orange-500 text-white"
-                      : "bg-primary text-primary-foreground",
-                )}
-              >
-                {product.tag}
+              {product.tag && (
+                <div
+                  className={cn(
+                    "absolute top-4 left-4 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest z-10 shadow-lg",
+                    product.tag === "Sold Out"
+                      ? "bg-red-500 text-white"
+                      : product.tag === "Pre-order"
+                        ? "bg-orange-500 text-white"
+                        : "bg-primary text-primary-foreground",
+                  )}
+                >
+                  {product.tag}
+                </div>
+              )}
+            </div>
+
+            {productImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {productImages.map((img, index) => (
+                  <button
+                    key={img.path || img.url}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={cn(
+                      "relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all",
+                      selectedImageIndex === index
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <Image
+                      src={img.url}
+                      alt={`${product.name} ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
               </div>
             )}
           </div>

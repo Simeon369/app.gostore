@@ -26,6 +26,10 @@ import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Instagram, TikTok, WhatsApp } from "@/components/icons";
+import {
+  deleteProductImagesFromStorage,
+  getProductImageStoragePaths,
+} from "@/lib/product-images";
 export default function ProductsPage() {
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState("");
@@ -87,26 +91,10 @@ export default function ProductsPage() {
     setDeletingId(productToDelete.id);
 
     try {
-      // 1. Resolve image path from URL if image_path is not defined
-      let storagePath = productToDelete.image_path;
-      if (!storagePath && productToDelete.image) {
-        const marker = "/product-images/";
-        const index = productToDelete.image.indexOf(marker);
-        if (index !== -1) {
-          storagePath = productToDelete.image.substring(index + marker.length);
-        }
-      }
+      const storagePaths = getProductImageStoragePaths(productToDelete);
+      await deleteProductImagesFromStorage(supabase, storagePaths);
 
-      // 2. Delete image from storage if path exists
-      if (storagePath) {
-        const { error: storageError } = await supabase.storage
-          .from("product-images")
-          .remove([storagePath]);
-
-        if (storageError) console.error("Error deleting image:", storageError);
-      }
-
-      // 3. Try to delete product from database
+      // Try to delete product from database
       const { error: dbError } = await supabase
         .from("products")
         .delete()

@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS public.products (
     price NUMERIC NOT NULL,
     category TEXT,
     image TEXT,
+    image_path TEXT,
+    images JSONB DEFAULT '[]'::jsonb,
     description TEXT,
     stock INTEGER DEFAULT 0,
     is_preorder BOOLEAN DEFAULT false,

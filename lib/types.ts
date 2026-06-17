@@ -3,6 +3,8 @@ export interface Product {
   name: string;
   price: number;
   image: string;
+  image_path?: string;
+  images?: { url: string; path: string }[];
   category: string;
   tag?: "Pre-order" | "Sold Out" | "New" | "Archived" | "Deleted" | null;
   description: string;

@@ -8,6 +8,20 @@ import { createClient } from "@/utils/supabase/client";
 import Image from "next/image";
 import { toast } from "sonner";
 import { calculateGrossAmount } from "@/utils/pricing";
+import {
+  buildProductImagePayload,
+  deleteProductImagesFromStorage,
+  getProductImages,
+  MAX_PRODUCT_IMAGES,
+  uploadProductImage,
+} from "@/lib/product-images";
+
+type ImageDraft = {
+  id: string;
+  preview: string;
+  path?: string;
+  file?: File;
+};
 
 interface CreateProductModalProps {
   isOpen: boolean;
@@ -34,8 +48,8 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
   const [storeCollections, setStoreCollections] = useState<string[]>([]);
   const [newCollectionInput, setNewCollectionInput] = useState("");
   const [tag, setTag] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageDrafts, setImageDrafts] = useState<ImageDraft[]>([]);
+  const [removedImagePaths, setRemovedImagePaths] = useState<string[]>([]);
 
   // Universal Variants State
   const [showVariantsSection, setShowVariantsSection] = useState(false);
@@ -98,8 +112,14 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
       setCollections(editProduct.collections || []);
       setTag(editProduct.tag || "");
       setIsPreorder(editProduct.is_preorder || false);
-      setImagePreview(editProduct.image || null);
-      setImageFile(null);
+      setImageDrafts(
+        getProductImages(editProduct).map((img) => ({
+          id: img.path || img.url,
+          preview: img.url,
+          path: img.path,
+        })),
+      );
+      setRemovedImagePaths([]);
 
       // Pre-fill variants
       const preSizes = editProduct.sizes_or_lengths || [];
@@ -153,14 +173,23 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
     };
   }, [isOpen]);
 
+  const clearImageDrafts = () => {
+    imageDrafts.forEach((draft) => {
+      if (draft.preview.startsWith("blob:")) {
+        URL.revokeObjectURL(draft.preview);
+      }
+    });
+    setImageDrafts([]);
+    setRemovedImagePaths([]);
+  };
+
   const resetForm = () => {
     setName("");
     setPrice("");
     setDescription("");
     setStock("");
     setIsPreorder(false);
-    setImageFile(null);
-    setImagePreview(null);
+    clearImageDrafts();
     setCategory("");
     setCollections([]);
     setNewCollectionInput("");
@@ -188,24 +217,52 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
     setNewCollectionInput("");
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    if (imageDrafts.length + files.length > MAX_PRODUCT_IMAGES) {
+      toast.error(`You can upload up to ${MAX_PRODUCT_IMAGES} images per product`);
+      e.target.value = "";
+      return;
     }
+
+    const newDrafts = files.map((file) => ({
+      id: crypto.randomUUID(),
+      preview: URL.createObjectURL(file),
+      file,
+    }));
+
+    setImageDrafts((prev) => [...prev, ...newDrafts]);
+    e.target.value = "";
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const draft = imageDrafts[index];
+    if (draft.path) {
+      setRemovedImagePaths((prev) => [...prev, draft.path!]);
+    }
+    if (draft.preview.startsWith("blob:")) {
+      URL.revokeObjectURL(draft.preview);
+    }
+    setImageDrafts((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMakeLeadImage = (index: number) => {
+    if (index === 0) return;
+    setImageDrafts((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.unshift(item);
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Only require image for new products
-    if (!isEditing && !imageFile) {
-      toast.error("Please upload a product image");
+    if (imageDrafts.length === 0) {
+      toast.error("Please upload at least one product image");
       return;
     }
     
@@ -224,46 +281,19 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
 
       if (!store) throw new Error("Store not found. Please complete onboarding.");
 
-      let imageUrl = editProduct?.image || null;
-      let imagePath = editProduct?.image_path || null;
-
-      // 2. Upload new image if changed
-      if (imageFile) {
-        // Delete old image if editing and replacing
-        if (isEditing) {
-          let oldPath = editProduct?.image_path;
-          if (!oldPath && editProduct?.image) {
-            const marker = '/product-images/';
-            const idx = editProduct.image.indexOf(marker);
-            if (idx !== -1) {
-              oldPath = editProduct.image.substring(idx + marker.length);
-            }
-          }
-          
-          if (oldPath) {
-            await supabase.storage
-              .from('product-images')
-              .remove([oldPath]);
-          }
+      const uploadedImages = [];
+      for (const draft of imageDrafts) {
+        if (draft.file) {
+          const uploaded = await uploadProductImage(supabase, store.id, draft.file);
+          uploadedImages.push(uploaded);
+        } else if (draft.path) {
+          uploadedImages.push({ url: draft.preview, path: draft.path });
         }
-
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${store.id}/${Date.now()}-${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(filePath, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
-        imagePath = filePath;
       }
+
+      await deleteProductImagesFromStorage(supabase, removedImagePaths);
+
+      const imagePayload = buildProductImagePayload(uploadedImages);
 
       // 3. Update store collections if there are new ones
       const currentStoreCollections = store.collections || [];
@@ -282,8 +312,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
         category,
         collections,
         tag: isPreorder ? "Pre-order" : (tag || null),
-        image: imageUrl,
-        image_path: imagePath,
+        ...imagePayload,
         sizes_or_lengths: showVariantsSection ? sizes : [],
         colors: showVariantsSection ? colors : [],
         textures: showVariantsSection ? textures : [],
@@ -362,36 +391,81 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
               <div className="flex flex-col gap-6">
                 {/* Image Upload */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Product Image</label>
-                  <input 
-                    type="file" 
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                    Product Images
+                  </label>
+                  <p className="text-xs text-muted-foreground ml-1">
+                    The first image is your lead photo on the storefront.
+                  </p>
+                  <input
+                    type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
                     ref={fileInputRef}
-                    onChange={handleFileChange}
+                    onChange={handleFilesChange}
                   />
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                      "w-full h-48 rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer overflow-hidden relative",
-                      imagePreview && "border-none"
-                    )}
-                  >
-                    {imagePreview ? (
-                      <>
-                        <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <p className="text-white font-bold text-sm">Change Image</p>
+
+                  {imageDrafts.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {imageDrafts.map((draft, index) => (
+                        <div
+                          key={draft.id}
+                          className="relative aspect-square rounded-2xl overflow-hidden border border-border bg-muted"
+                        >
+                          <Image
+                            src={draft.preview}
+                            alt={`Product image ${index + 1}`}
+                            fill
+                            className="object-cover"
+                          />
+                          {index === 0 && (
+                            <span className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-widest">
+                              Lead
+                            </span>
+                          )}
+                          <div className="absolute top-2 right-2 flex flex-col gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                              title="Remove image"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleMakeLeadImage(index)}
+                              className="absolute bottom-2 left-2 right-2 px-2 py-1.5 rounded-lg bg-black/60 text-white text-[10px] font-bold hover:bg-black/80 transition-colors"
+                            >
+                              Make lead photo
+                            </button>
+                          )}
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-6 h-6 text-muted-foreground" />
-                        <p className="text-sm font-bold text-muted-foreground">Click to upload image</p>
-                        <p className="text-xs text-muted-foreground">JPG, PNG, WEBP (Max 5MB)</p>
-                      </>
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {imageDrafts.length < MAX_PRODUCT_IMAGES && (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn(
+                        "w-full h-36 rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer",
+                      )}
+                    >
+                      <Upload className="w-6 h-6 text-muted-foreground" />
+                      <p className="text-sm font-bold text-muted-foreground">
+                        {imageDrafts.length === 0
+                          ? "Click to upload images"
+                          : "Add more images"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        JPG, PNG, WEBP (Max 5MB each)
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
