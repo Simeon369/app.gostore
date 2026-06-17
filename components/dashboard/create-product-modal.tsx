@@ -490,22 +490,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                       placeholder="0.00"
                       className="w-full px-5 py-4 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all font-bold text-foreground placeholder:text-muted-foreground/50"
                     />
-                    {price && Number(price) > 0 && (
-                      <div className="mt-1 p-4 rounded-xl bg-primary/5 border border-primary/20 text-xs flex flex-col gap-2 shadow-sm">
-                        <div className="flex justify-between items-center text-muted-foreground">
-                          <span className="font-medium">Customer pays (Includes gateway fee):</span>
-                          <span className="font-bold">₦{calculateGrossAmount(Number(price)).toLocaleString()}</span>
-                        </div>
-                        <div className="w-full h-px bg-border" />
-                        <div className="flex justify-between items-center text-primary">
-                          <span className="font-bold">You receive (After GoStore commission):</span>
-                          <span className="font-black text-sm">₦{Math.floor(Number(price) - Math.min(Number(price) * 0.05, 10000)).toLocaleString()}</span>
-                        </div>
-                        {Number(price) >= 200000 && (
-                          <p className="text-[10px] text-primary/70 font-medium">✨ GoStore fee capped at ₦10,000</p>
-                        )}
-                      </div>
-                    )}
+                    
                   </div>
                 </div>
 
