@@ -15,14 +15,19 @@ export async function createClient() {
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      // Return an array of { name, value } objects. If Next.js provides a getAll method, use it; otherwise return []
-      getAll: () => {
-        const all = (cookieStore as any).getAll?.() ?? [];
-        return all.map((c: any) => ({ name: c.name ?? "", value: c.value }));
+      getAll() {
+        return cookieStore.getAll();
       },
-      // Supabase may try to set auth cookies, but we don't need them in the admin context.
-      // Provide a no‑op implementation to satisfy the type checker.
-      setAll: () => {},
+      setAll(cookiesToSet, _headers) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // Server Components cannot always write cookies.
+          // proxy.ts refreshes sessions and persists auth cookies.
+        }
+      },
     },
   });
 }

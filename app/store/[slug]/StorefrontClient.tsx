@@ -24,6 +24,7 @@ import { CheckoutModal } from "@/components/store/checkout-modal";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { isManualTransferMode } from "@/lib/payment-config";
+import { getSessionItem, setSessionItem } from "@/lib/safe-storage";
 import { getMarketingHomeUrl } from "@/lib/platform-settings";
 
 const formatWhatsAppNumber = (phone: string): string => {
@@ -90,7 +91,7 @@ export default function StorefrontClient() {
         const storeId = storeData.store.id;
         const sessionKey = `visited_store_${storeId}`;
 
-        if (!sessionStorage.getItem(sessionKey)) {
+        if (!getSessionItem(sessionKey)) {
           // Check if current user is owner or super admin
           const {
             data: { user },
@@ -108,7 +109,7 @@ export default function StorefrontClient() {
               })
               .then();
           }
-          sessionStorage.setItem(sessionKey, "true");
+          setSessionItem(sessionKey, "true");
         }
       };
 

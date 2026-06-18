@@ -15,6 +15,7 @@ import {
   MAX_PRODUCT_IMAGES,
   uploadProductImage,
 } from "@/lib/product-images";
+import { generateId } from "@/lib/id";
 
 type ImageDraft = {
   id: string;
@@ -228,7 +229,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
     }
 
     const newDrafts = files.map((file) => ({
-      id: crypto.randomUUID(),
+      id: generateId(),
       preview: URL.createObjectURL(file),
       file,
     }));

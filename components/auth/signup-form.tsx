@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2, Rocket, Store, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { isValidStoreSlug, slugifyStoreName } from "@/lib/store-slug";
+import { setSessionItem } from "@/lib/safe-storage";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -147,7 +148,7 @@ export default function SignupForm() {
         return;
       }
 
-      sessionStorage.setItem(
+      setSessionItem(
         "gostore_signup_store",
         JSON.stringify({ storeName: trimmedStoreName, slug }),
       );

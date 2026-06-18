@@ -79,12 +79,15 @@ body {
   background: var(--background);
   color: var(--foreground);
   min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
   font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 html {
   background: var(--background);
   color: var(--foreground);
+  height: -webkit-fill-available;
 }
 
 h1, h2, h3, h4, h5, h6 {

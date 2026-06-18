@@ -27,6 +27,7 @@ import { StoreLogoUpload } from "@/components/store-logo-upload";
 import { uploadStoreLogo } from "@/lib/store-logo";
 import { FaInstagram, FaTiktok, FaWhatsapp } from "react-icons/fa";
 import { toast } from "sonner";
+import { getSessionItem, removeSessionItem } from "@/lib/safe-storage";
 
 const formatWhatsAppNumber = (phone: string): string => {
   const clean = phone.replace(/\D/g, '');
@@ -134,10 +135,10 @@ export function OnboardingWizard() {
   const [storeName, setStoreName] = useState(() => {
     if (typeof window === "undefined") return "";
     try {
-      const raw = sessionStorage.getItem("gostore_signup_store");
+      const raw = getSessionItem("gostore_signup_store");
       if (!raw) return "";
       const parsed = JSON.parse(raw) as { storeName?: string };
-      sessionStorage.removeItem("gostore_signup_store");
+      removeSessionItem("gostore_signup_store");
       return parsed.storeName ?? "";
     } catch {
       return "";
