@@ -358,7 +358,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
     <AnimatePresence>
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <motion.div 
-          initial={{ opacity: 0 }}
+          initial={false}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => { onClose(); resetForm(); }}
@@ -366,7 +366,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
         />
         
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={false}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           className="w-full max-w-2xl bg-card border border-border shadow-2xl overflow-hidden relative z-10 flex flex-col max-h-[90vh] rounded-[32px]"
@@ -593,7 +593,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
 
                   {isPreorder && (
                     <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
+                      initial={false}
                       animate={{ opacity: 1, height: "auto" }}
                       className="flex flex-col gap-2 pt-2 border-t border-border"
                     >
@@ -701,7 +701,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
                       <AnimatePresence mode="wait">
                         {activeVariantCategory === "size" && (
                           <motion.div
-                            initial={{ opacity: 0, y: -10 }}
+                            initial={false}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             className="flex flex-col gap-2 p-4 bg-muted/30 rounded-2xl border border-border"
@@ -736,7 +736,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
 
                         {activeVariantCategory === "color" && (
                           <motion.div
-                            initial={{ opacity: 0, y: -10 }}
+                            initial={false}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             className="flex flex-col gap-2 p-4 bg-muted/30 rounded-2xl border border-border"
@@ -771,7 +771,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
 
                         {activeVariantCategory === "texture" && (
                           <motion.div
-                            initial={{ opacity: 0, y: -10 }}
+                            initial={false}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             className="flex flex-col gap-2 p-4 bg-muted/30 rounded-2xl border border-border"
@@ -806,7 +806,7 @@ export function CreateProductModal({ isOpen, onClose, onSuccess, editProduct }: 
 
                         {activeVariantCategory === "type" && (
                           <motion.div
-                            initial={{ opacity: 0, y: -10 }}
+                            initial={false}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             className="flex flex-col gap-2 p-4 bg-muted/30 rounded-2xl border border-border"

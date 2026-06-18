@@ -13,7 +13,7 @@ export function RevenueCard() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         className="glass-card p-8 rounded-[40px] flex flex-col gap-4 border-primary/20 bg-primary/[0.02]"
       >
@@ -32,7 +32,7 @@ export function RevenueCard() {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         className="glass-card p-8 rounded-[40px] flex flex-col gap-4"
@@ -55,7 +55,7 @@ export function RevenueCard() {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
         className="glass-card p-8 rounded-[40px] flex flex-col gap-4 border-emerald-500/20"

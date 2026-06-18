@@ -144,7 +144,7 @@ export function ManageCollectionsModal({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
@@ -153,7 +153,7 @@ export function ManageCollectionsModal({
 
           {/* Modal Box */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={false}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="glass-card w-full max-w-lg bg-card border-border shadow-2xl rounded-[32px] overflow-hidden relative z-10 flex flex-col p-6 gap-6"
@@ -214,7 +214,7 @@ export function ManageCollectionsModal({
                 collections.map((c) => (
                   <motion.div
                     key={c}
-                    initial={{ opacity: 0, x: -10 }}
+                    initial={false}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
                     className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/50 border border-border hover:border-primary/20 hover:bg-muted transition-all group"

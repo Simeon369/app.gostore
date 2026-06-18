@@ -44,7 +44,7 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={false}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-background w-full max-w-md rounded-[40px] border border-border shadow-2xl overflow-hidden"
       >

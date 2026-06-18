@@ -108,15 +108,30 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .text-gradient {
+    color: var(--foreground);
     background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
   [data-theme="light"] .text-gradient,
   :root:not([data-theme="dark"]) .text-gradient {
+    color: var(--foreground);
     background: linear-gradient(135deg, #050505 0%, #71717a 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

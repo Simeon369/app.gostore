@@ -279,7 +279,7 @@ export default function ProductsPage() {
               {filteredProducts.map((product, i) => (
                 <motion.tr
                   key={product.id}
-                  initial={{ opacity: 0 }}
+                  initial={false}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.05 }}
                   className="hover:bg-muted/50 transition-all group"
@@ -462,7 +462,7 @@ export default function ProductsPage() {
 
             <motion.div
               ref={menuRef}
-              initial={{ opacity: 0, y: -5, scale: 0.95 }}
+              initial={false}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -5, scale: 0.95 }}
               style={{
@@ -541,14 +541,14 @@ export default function ProductsPage() {
         {productToDelete && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setProductToDelete(null)}
               className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="glass-card w-full max-w-md bg-card border-border shadow-2xl rounded-[32px] overflow-hidden relative z-10 flex flex-col p-6 gap-6"

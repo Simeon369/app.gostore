@@ -137,7 +137,7 @@ export default function OrderTrackingClient() {
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-12 md:py-20 flex flex-col items-center">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           className="w-full text-center space-y-6"
         >
@@ -181,7 +181,7 @@ export default function OrderTrackingClient() {
           {activeSearchId && !isSearching && (
             <motion.div
               key={activeSearchId}
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md mx-auto mt-12"

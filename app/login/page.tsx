@@ -54,7 +54,7 @@ export default function LoginPage() {
       </Link> */}
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md flex flex-col gap-8"
       >

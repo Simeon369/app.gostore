@@ -193,7 +193,7 @@ export default function OrdersPage() {
           filteredOrders.map((order, i) => (
             <motion.div
               key={order.id}
-              initial={{ opacity: 0, x: -20 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}
               className="glass-card rounded-2xl lg:rounded-[32px] p-5 lg:p-8 flex flex-col gap-6 hover:border-primary/30 transition-all group border border-border"

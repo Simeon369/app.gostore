@@ -543,7 +543,7 @@ export default function ProductDetailsClient() {
                           <AnimatePresence>
                             {openDropdown === "size" && (
                               <motion.div
-                                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                initial={false}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
                                 transition={{ duration: 0.15 }}
@@ -622,7 +622,7 @@ export default function ProductDetailsClient() {
                           <AnimatePresence>
                             {openDropdown === "color" && (
                               <motion.div
-                                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                initial={false}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
                                 transition={{ duration: 0.15 }}
@@ -702,7 +702,7 @@ export default function ProductDetailsClient() {
                           <AnimatePresence>
                             {openDropdown === "texture" && (
                               <motion.div
-                                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                initial={false}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
                                 transition={{ duration: 0.15 }}
@@ -778,7 +778,7 @@ export default function ProductDetailsClient() {
                           <AnimatePresence>
                             {openDropdown === "type" && (
                               <motion.div
-                                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                initial={false}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
                                 transition={{ duration: 0.15 }}

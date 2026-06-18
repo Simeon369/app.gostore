@@ -281,7 +281,7 @@ export default function SettingsPage() {
           
           {/* TAB: STORE DETAILS */}
           {activeTab === "store" && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
+            <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
               <div>
                 <h2 className="text-xl lg:text-2xl font-black text-foreground mb-1">Store Details</h2>
                 <p className="text-xs lg:text-sm text-muted-foreground">Update your store&apos;s public information and appearance.</p>
@@ -458,7 +458,7 @@ export default function SettingsPage() {
 
           {/* TAB: BANK ACCOUNT */}
           {activeTab === "bank" && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
+            <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl lg:text-2xl font-black text-foreground mb-1">Settlement Account</h2>
@@ -543,7 +543,7 @@ export default function SettingsPage() {
 
           {/* TAB: DELIVERY */}
           {activeTab === "delivery" && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
+            <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
               <div>
                 <h2 className="text-xl lg:text-2xl font-black text-foreground mb-1">Delivery Settings</h2>
                 <p className="text-xs lg:text-sm text-muted-foreground">Configure how delivery fees are paid and manage delivery locations.</p>
@@ -659,7 +659,7 @@ export default function SettingsPage() {
 
           {/* TAB: SECURITY */}
           {activeTab === "security" && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-32 text-center gap-6">
+            <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-32 text-center gap-6">
               <div className="w-20 h-20 rounded-[32px] bg-muted flex items-center justify-center border border-border">
                 <Shield className="w-10 h-10 text-muted-foreground" />
               </div>

@@ -429,7 +429,7 @@ export default function StorefrontClient() {
             {filteredProducts.map((product, i) => (
               <motion.div
                 key={product.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 className="relative aspect-square rounded-[20px] overflow-hidden group bg-card border border-border transition-all duration-300"

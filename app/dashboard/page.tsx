@@ -269,7 +269,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Sales */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0 }}
           className="glass-card rounded-[32px] p-4 lg:p-8 flex flex-col gap-4"
@@ -305,7 +305,7 @@ export default function DashboardPage() {
 
         {/* Orders */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.06 }}
           className="glass-card rounded-[32px] p-4 lg:p-8 flex flex-col gap-4"
@@ -334,7 +334,7 @@ export default function DashboardPage() {
 
         {/* Views */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
           className="glass-card rounded-[32px] p-4 lg:p-8 flex flex-col gap-4"
@@ -398,7 +398,7 @@ export default function DashboardPage() {
           {platformBreakdown.map((p, i) => (
             <motion.div
               key={p.platform}
-              initial={{ opacity: 0, y: 16 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }}
               className="glass-card rounded-[32px] p-4 lg:p-6 flex flex-col gap-5"

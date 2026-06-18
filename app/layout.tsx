@@ -3,6 +3,7 @@ import "./globals.css";
 
 import QueryProvider from "../providers/query-provider";
 import { ThemeProvider } from "../providers/theme-provider";
+import MotionProvider from "../providers/motion-provider";
 import { ThemeAwareToaster } from "../components/theme-aware-toaster";
 
 export const metadata: Metadata = {
@@ -58,8 +59,10 @@ export default function RootLayout({
           storageKey="gostore-app-theme"
         >
           <QueryProvider>
-            {children}
-            <ThemeAwareToaster />
+            <MotionProvider>
+              {children}
+              <ThemeAwareToaster />
+            </MotionProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

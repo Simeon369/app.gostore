@@ -143,7 +143,7 @@ export default function PayoutsPage() {
             payouts.map((payout) => (
               <motion.div
                 key={payout.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between p-4 rounded-2xl bg-muted/50 border border-border hover:border-primary/20 transition-all group cursor-default"
               >
