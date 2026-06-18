@@ -5,10 +5,11 @@ import { Copy, MessageCircle, Share2, Check } from "lucide-react";
 import { Instagram } from "../../components/icons";
 import { useState } from "react";
 import { cn } from "@/utils/cn";
+import { getStoreUrl } from "@/lib/urls";
 
 export function LinkGenerator({ storeSlug }: { storeSlug: string }) {
   const [copied, setCopied] = useState<string | null>(null);
-  const storeUrl = `https://app-gostore.vercel.app/store/${storeSlug}`;
+  const storeUrl = getStoreUrl(storeSlug);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);

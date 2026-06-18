@@ -5,6 +5,7 @@ import { X, Store as StoreIcon, Globe, Loader2, ArrowRight } from "lucide-react"
 import { useState } from "react";
 import { useStore } from "../../store/use-store";
 import { cn } from "../../utils/cn";
+import { getAppHost } from "@/lib/urls";
 
 export function CreateStoreModal({ onClose }: { onClose: () => void }) {
   const { addStore } = useStore();
@@ -93,7 +94,7 @@ export function CreateStoreModal({ onClose }: { onClose: () => void }) {
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex gap-3">
             <Globe className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
-              Your store will be instantly live at <span className="text-foreground font-bold">app-gostore.vercel.app/store/{slug || "..."}</span>
+              Your store will be instantly live at <span className="text-foreground font-bold">{getAppHost()}/store/{slug || "..."}</span>
             </p>
           </div>
 

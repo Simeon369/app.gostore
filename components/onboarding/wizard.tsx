@@ -28,6 +28,7 @@ import { uploadStoreLogo } from "@/lib/store-logo";
 import { FaInstagram, FaTiktok, FaWhatsapp } from "react-icons/fa";
 import { toast } from "sonner";
 import { getSessionItem, removeSessionItem } from "@/lib/safe-storage";
+import { getAppHost, getStoreUrl } from "@/lib/urls";
 
 const formatWhatsAppNumber = (phone: string): string => {
   const clean = phone.replace(/\D/g, '');
@@ -284,7 +285,7 @@ export function OnboardingWizard() {
 
   const copyLink = () => {
     const slug = slugifyStoreName(storeName);
-    const url = `https://app-gostore.vercel.app/store/${slug}?src=wa`;
+    const url = getStoreUrl(slug, { src: "wa" });
     navigator.clipboard.writeText(url);
     toast.success("Link copied!");
   };
@@ -368,7 +369,7 @@ export function OnboardingWizard() {
                 />
                 {storeName && (
                   <p className="text-xs text-primary font-medium ml-1">
-                    Your URL: app-gostore.vercel.app/store/{slugifyStoreName(storeName)}
+                    Your URL: {getAppHost()}/store/{slugifyStoreName(storeName)}
                   </p>
                 )}
               </div>
@@ -538,7 +539,7 @@ export function OnboardingWizard() {
                   <input 
                     type="text" 
                     readOnly
-                    value={`https://app-gostore.vercel.app/store/${slugifyStoreName(storeName)}?src=wa`}
+                    value={getStoreUrl(slugifyStoreName(storeName), { src: "wa" })}
                     className="flex-1 bg-background px-4 py-3 rounded-xl border border-border text-sm font-bold text-muted-foreground outline-none"
                   />
                   <button onClick={copyLink} className="p-3 bg-primary text-primary-foreground rounded-xl hover:scale-105 transition-all">

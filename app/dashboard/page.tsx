@@ -7,6 +7,7 @@ import { useState } from "react";
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { getStoreUrl } from "@/lib/urls";
 
 type TimeRange = 'today' | 'week' | 'month' | 'all';
 
@@ -210,7 +211,7 @@ export default function DashboardPage() {
     totalViews = 0, 
     platformBreakdown = [] 
   } = dashboardData;
-  const storeUrl = `https://app-gostore.vercel.app/store/${store.slug}`;
+  const storeUrl = getStoreUrl(store.slug);
 
   const socialLinks = [];
   if (store.channels?.whatsapp) {

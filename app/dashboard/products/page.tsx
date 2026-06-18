@@ -30,6 +30,7 @@ import {
   deleteProductImagesFromStorage,
   getProductImageStoragePaths,
 } from "@/lib/product-images";
+import { getProductUrl } from "@/lib/urls";
 export default function ProductsPage() {
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,7 +148,7 @@ export default function ProductsPage() {
       toast.error("Store slug not found");
       return;
     }
-    const baseUrl = `https://app-gostore.vercel.app/store/${store.slug}/product/${product.id}`;
+    const baseUrl = getProductUrl(store.slug, product.id);
     const url = source ? `${baseUrl}?source=${source}` : baseUrl;
     navigator.clipboard.writeText(url);
     toast.success(`${source || "Direct"} product link copied!`);

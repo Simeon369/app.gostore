@@ -111,62 +111,66 @@ export function InviteCodesManager() {
       </div>
 
       <div className="border border-border rounded-2xl overflow-hidden">
-        <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border">
-          <div className="col-span-4">Code</div>
-          <div className="col-span-3">Status</div>
-          <div className="col-span-3">Created</div>
-          <div className="col-span-2 text-right">Actions</div>
-        </div>
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border">
+              <div className="col-span-4">Code</div>
+              <div className="col-span-3">Status</div>
+              <div className="col-span-3">Created</div>
+              <div className="col-span-2 text-right">Actions</div>
+            </div>
 
-        {loading ? (
-          <div className="p-6 flex items-center justify-center text-muted-foreground text-sm">
-            <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading invite codes...
+            {loading ? (
+              <div className="p-6 flex items-center justify-center text-muted-foreground text-sm">
+                <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading invite codes...
+              </div>
+            ) : codes.length === 0 ? (
+              <div className="p-6 text-sm text-muted-foreground">No invite codes yet.</div>
+            ) : (
+              <div className="divide-y divide-border">
+                {codes.map((code) => {
+                  const status = code.used_at
+                    ? "Used"
+                    : code.is_active
+                      ? "Active"
+                      : "Revoked";
+                  return (
+                    <div key={code.id} className="grid grid-cols-12 gap-3 px-4 py-3 items-center text-sm">
+                      <div className="col-span-4 font-mono font-semibold whitespace-nowrap">{code.code}</div>
+                      <div className="col-span-3 whitespace-nowrap">{status}</div>
+                      <div className="col-span-3 text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(code.created_at).toLocaleString("en-NG")}
+                      </div>
+                      <div className="col-span-2 flex items-center justify-end gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => copyCode(code.code)}
+                          className="p-2 rounded-lg border border-border hover:bg-muted"
+                          title="Copy code"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRevoke(code.id)}
+                          disabled={!code.is_active || !!code.used_at || revokingId === code.id}
+                          className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-40"
+                          title="Revoke code"
+                        >
+                          {revokingId === code.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Ban className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        ) : codes.length === 0 ? (
-          <div className="p-6 text-sm text-muted-foreground">No invite codes yet.</div>
-        ) : (
-          <div className="divide-y divide-border">
-            {codes.map((code) => {
-              const status = code.used_at
-                ? "Used"
-                : code.is_active
-                  ? "Active"
-                  : "Revoked";
-              return (
-                <div key={code.id} className="grid grid-cols-12 gap-3 px-4 py-3 items-center text-sm">
-                  <div className="col-span-4 font-mono font-semibold">{code.code}</div>
-                  <div className="col-span-3">{status}</div>
-                  <div className="col-span-3 text-xs text-muted-foreground">
-                    {new Date(code.created_at).toLocaleString("en-NG")}
-                  </div>
-                  <div className="col-span-2 flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => copyCode(code.code)}
-                      className="p-2 rounded-lg border border-border hover:bg-muted"
-                      title="Copy code"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRevoke(code.id)}
-                      disabled={!code.is_active || !!code.used_at || revokingId === code.id}
-                      className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-40"
-                      title="Revoke code"
-                    >
-                      {revokingId === code.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Ban className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

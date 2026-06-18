@@ -21,11 +21,10 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   maintenance_mode: false,
 };
 
+import { getMarketingBaseUrl } from "@/lib/urls";
+
 export function getMarketingHomeUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_MARKETING_URL?.replace(/\/$/, "") ||
-    "https://home-gostore.vercel.app"
-  );
+  return getMarketingBaseUrl();
 }
 
 export function getMarketingWaitlistUrl(): string {

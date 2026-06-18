@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { isValidStoreSlug, slugifyStoreName } from "@/lib/store-slug";
 import { setSessionItem } from "@/lib/safe-storage";
+import { getAppHost } from "@/lib/urls";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -24,9 +25,7 @@ export default function SignupForm() {
   const supabase = createClient();
 
   const slug = useMemo(() => slugifyStoreName(storeName), [storeName]);
-  const appHost =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, "") ||
-    "app-gostore.vercel.app";
+  const appHost = getAppHost();
 
   useEffect(() => {
     if (!storeName.trim()) {
@@ -105,10 +104,7 @@ export default function SignupForm() {
       const settingsRes = await fetch("/api/platform/settings");
       const settings = await settingsRes.json();
       if (!settings.signup_enabled) {
-        const marketingBase =
-          process.env.NEXT_PUBLIC_MARKETING_URL?.replace(/\/$/, "") ||
-          "https://home-gostore.vercel.app";
-        window.location.href = `${marketingBase}/join`;
+        window.location.href = "/join";
         return;
       }
 

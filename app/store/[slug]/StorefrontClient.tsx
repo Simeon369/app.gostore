@@ -25,7 +25,6 @@ import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { isManualTransferMode } from "@/lib/payment-config";
 import { getSessionItem, setSessionItem } from "@/lib/safe-storage";
-import { getMarketingHomeUrl } from "@/lib/platform-settings";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, "");
@@ -287,7 +286,7 @@ export default function StorefrontClient() {
       {/* Top Navigation */}
       <nav className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="px-6 md:px-10 max-w-6xl mx-auto py-4 flex items-center justify-between">
-          <a href={getMarketingHomeUrl()} className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="rounded-full overflow-hidden">
               <Image
                 src="/gostore-logo.png"
@@ -301,7 +300,7 @@ export default function StorefrontClient() {
             <span className="text-xs font-black uppercase tracking-wider text-primary hidden sm:inline">
               GoStore
             </span>
-          </a>
+          </div>
 
           <div className="flex items-center gap-3">
             <button

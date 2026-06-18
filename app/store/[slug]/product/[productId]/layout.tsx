@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import type { Metadata } from "next";
+import { getAppBaseUrl, getProductUrl } from "@/lib/urls";
 
 interface Props {
   params: Promise<{ slug: string; productId: string }>;
@@ -43,16 +44,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const title = `${product.name} | Buy for ₦${Number(product.price).toLocaleString()} | ${store.name}`;
   const description = product.description || `Buy ${product.name} online at ${store.name} official storefront. Instant Checkout and Direct WhatsApp support.`;
-  const imageUrl = product.image || "https://app-gostore.vercel.app/app-preview.png";
+  const appBase = getAppBaseUrl();
+  const imageUrl = product.image || `${appBase}/app-preview.png`;
 
   return {
-    metadataBase: new URL("https://app-gostore.vercel.app"),
+    metadataBase: new URL(appBase),
     title,
     description,
     openGraph: {
       title: `${product.name} - ₦${Number(product.price).toLocaleString()}`,
       description,
-      url: `https://app-gostore.vercel.app/store/${slug}/product/${productId}`,
+      url: getProductUrl(slug, productId),
       siteName: `${store.name} on GoStore`,
       images: [
         {
