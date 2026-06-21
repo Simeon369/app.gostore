@@ -14,6 +14,7 @@ import {
   Zap,
   Share2,
   ChevronDown,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -21,7 +22,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { CheckoutModal } from "@/components/store/checkout-modal";
-import { StaticMapPreview } from "@/components/maps/static-map-preview";
 import { Instagram, TikTok } from "@/components/icons";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -856,16 +856,15 @@ export default function ProductDetailsClient() {
             </div>
 
             {/* Pickup Available */}
-            {store.pickup_enabled && store.latitude != null && store.longitude != null && (
-              <div className="p-4 rounded-2xl bg-muted/30 border border-border flex flex-col gap-3 mt-2">
+            {store.pickup_enabled && store.address_formatted && (
+              <div className="p-4 rounded-2xl bg-muted/30 border border-border flex flex-col gap-2 mt-2">
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary">
                   Pickup Available
                 </p>
-                <StaticMapPreview
-                  lat={store.latitude}
-                  lng={store.longitude}
-                  address={store.address_formatted}
-                />
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-foreground leading-relaxed">{store.address_formatted}</span>
+                </div>
               </div>
             )}
 

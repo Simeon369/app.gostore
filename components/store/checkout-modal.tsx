@@ -13,17 +13,15 @@ import {
   CheckCircle2,
   FileText,
   Package,
+  MapPin,
 } from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cn } from "@/utils/cn";
 import { toast } from "sonner";
 import { getPlatformBankDetails, isManualTransferMode } from "@/lib/payment-config";
-import { AddressAutocomplete } from "@/components/maps/address-autocomplete";
-import { StaticMapPreview } from "@/components/maps/static-map-preview";
-import { isWithinPickupRadius } from "@/lib/geo";
-import type { DeliveryMethod, GeoLocation } from "@/lib/types";
+import type { DeliveryMethod } from "@/lib/types";
 
 interface CheckoutModalProps {
   product: any;
@@ -44,52 +42,31 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
-  const [customerLocation, setCustomerLocation] = useState<GeoLocation | null>(null);
+  const [customerAddress, setCustomerAddress] = useState("");
 
   const pickupEnabled = !!store.pickup_enabled;
   const dispatchEnabled = store.dispatch_enabled !== false;
-  const vendorLat = store.latitude;
-  const vendorLng = store.longitude;
-  const pickupRadiusKm = Number(store.pickup_radius_km ?? 5);
-  const hasVendorLocation = vendorLat != null && vendorLng != null;
-
-  const pickupRecommended = useMemo(() => {
-    if (
-      !pickupEnabled ||
-      !hasVendorLocation ||
-      customerLocation?.lat == null ||
-      customerLocation?.lng == null
-    ) {
-      return false;
-    }
-    return isWithinPickupRadius(
-      { lat: vendorLat, lng: vendorLng },
-      { lat: customerLocation.lat, lng: customerLocation.lng },
-      pickupRadiusKm,
-    );
-  }, [pickupEnabled, hasVendorLocation, customerLocation, vendorLat, vendorLng, pickupRadiusKm]);
 
   const manualMode = isManualTransferMode();
   const bankDetails = getPlatformBankDetails();
   const checkoutTotal = Number(product.price);
   const deliveryFee = 0;
 
-  const customerAddress =
+  const resolvedCustomerAddress =
     deliveryMethod === "pickup"
       ? store.address_formatted || "Pickup at vendor store"
-      : customerLocation?.formatted || "";
+      : customerAddress.trim() || "";
 
   useEffect(() => {
     if (userPickedMethod.current) return;
-
     if (pickupEnabled && !dispatchEnabled) {
       setDeliveryMethod("pickup");
     } else if (!pickupEnabled && dispatchEnabled) {
       setDeliveryMethod("dispatch");
     } else if (pickupEnabled && dispatchEnabled) {
-      setDeliveryMethod(pickupRecommended ? "pickup" : "dispatch");
+      setDeliveryMethod("dispatch");
     }
-  }, [pickupEnabled, dispatchEnabled, pickupRecommended]);
+  }, [pickupEnabled, dispatchEnabled]);
 
   const hasValidDelivery =
     (deliveryMethod === "pickup" && pickupEnabled) ||
@@ -97,7 +74,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
 
   const hasValidAddress =
     deliveryMethod === "pickup" ||
-    (deliveryMethod === "dispatch" && !!customerLocation?.formatted?.trim());
+    (deliveryMethod === "dispatch" && !!customerAddress.trim());
 
   const canPlaceOrder =
     manualMode &&
@@ -181,8 +158,8 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
 
   const buildOrderPayload = () => ({
     delivery_method: deliveryMethod,
-    customer_latitude: customerLocation?.lat ?? null,
-    customer_longitude: customerLocation?.lng ?? null,
+    customer_latitude: null as null,
+    customer_longitude: null as null,
   });
 
   const handlePaystackCheckout = async () => {
@@ -208,7 +185,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
         customer_name: customerName,
         customer_phone: customerPhone,
         customer_email: customerEmail,
-        customer_address: customerAddress,
+        customer_address: resolvedCustomerAddress,
         customer_latitude: payload.customer_latitude,
         customer_longitude: payload.customer_longitude,
         delivery_method: payload.delivery_method,
@@ -242,7 +219,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     formData.append("customer_name", customerName);
     formData.append("customer_phone", customerPhone);
     formData.append("customer_email", customerEmail);
-    formData.append("customer_address", customerAddress);
+    formData.append("customer_address", resolvedCustomerAddress);
     formData.append("items", JSON.stringify(orderItems));
     formData.append("total", String(checkoutTotal));
     formData.append("delivery_fee", "0");
@@ -287,7 +264,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
       return;
     }
 
-    if (deliveryMethod === "dispatch" && !customerLocation?.formatted?.trim()) {
+    if (deliveryMethod === "dispatch" && !customerAddress.trim()) {
       toast.error("Please enter your delivery address");
       return;
     }
@@ -427,11 +404,6 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                         <span className="text-[10px] font-normal opacity-80">Collect from vendor</span>
                       </div>
                     </div>
-                    {pickupRecommended && (
-                      <span className="text-[9px] font-black uppercase tracking-wider bg-primary/20 px-2 py-1 rounded-full">
-                        Recommended
-                      </span>
-                    )}
                   </button>
                 )}
                 {dispatchEnabled && (
@@ -460,32 +432,30 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                 )}
               </div>
 
-              {deliveryMethod === "pickup" && hasVendorLocation && (
-                <StaticMapPreview
-                  lat={vendorLat}
-                  lng={vendorLng}
-                  address={store.address_formatted}
-                />
+              {deliveryMethod === "pickup" && store.address_formatted && (
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-muted/50 border border-border">
+                  <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Pickup Address</span>
+                    <span className="text-sm font-medium text-foreground leading-relaxed">{store.address_formatted}</span>
+                  </div>
+                </div>
               )}
 
               {deliveryMethod === "dispatch" && (
                 <div className="flex flex-col gap-3">
-                  <AddressAutocomplete
-                    value={customerLocation?.formatted || ""}
-                    onChange={setCustomerLocation}
-                    placeholder="Delivery address"
+                  <input
+                    type="text"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    placeholder="Enter your delivery address"
                     required
+                    className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm"
                   />
                   <p className="text-[11px] text-muted-foreground leading-relaxed px-1">
-                    Delivery fee is paid directly to the dispatch rider when your order arrives. It is not included in this payment.
+                    Delivery fee is paid directly to the dispatch rider when your order arrives.
                   </p>
                 </div>
-              )}
-
-              {dispatchEnabled && pickupEnabled && customerLocation?.lat != null && (
-                <p className="text-[10px] text-muted-foreground italic px-1">
-                  Enter your address to see if pickup is recommended based on distance.
-                </p>
               )}
             </div>
 

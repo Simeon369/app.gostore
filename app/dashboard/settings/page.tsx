@@ -19,7 +19,6 @@ import {
   STORE_LOGOS_BUCKET,
 } from "@/lib/store-logo";
 import { AddressAutocomplete } from "@/components/maps/address-autocomplete";
-import { StaticMapPreview } from "@/components/maps/static-map-preview";
 import type { GeoLocation } from "@/lib/types";
 
 const formatWhatsAppNumber = (phone: string): string => {
@@ -62,7 +61,6 @@ export default function SettingsPage() {
   const [shopAddress, setShopAddress] = useState<GeoLocation | null>(null);
   const [pickupEnabled, setPickupEnabled] = useState(false);
   const [dispatchEnabled, setDispatchEnabled] = useState(true);
-  const [pickupRadiusKm, setPickupRadiusKm] = useState("5");
 
   const { data: store, isLoading } = useQuery({
     queryKey: ['settings-store'],
@@ -100,21 +98,13 @@ export default function SettingsPage() {
         accountName: store.account_name || "",
         isVerified: !!(store.bank_code && store.account_number && store.account_name),
       });
-      if (store.address_formatted && store.latitude != null && store.longitude != null) {
-        setShopAddress({
-          formatted: store.address_formatted,
-          placeId: store.address_place_id || undefined,
-          lat: store.latitude,
-          lng: store.longitude,
-        });
-      } else if (store.address_formatted) {
+      if (store.address_formatted) {
         setShopAddress({ formatted: store.address_formatted });
       } else {
         setShopAddress(null);
       }
       setPickupEnabled(!!store.pickup_enabled);
       setDispatchEnabled(store.dispatch_enabled !== false);
-      setPickupRadiusKm(String(store.pickup_radius_km ?? 5));
       setLogoPreview(store.logo || null);
       setLogoFile(null);
       setRemoveLogo(false);
@@ -216,8 +206,7 @@ export default function SettingsPage() {
     }
   };
 
-  const hasShopCoordinates =
-    shopAddress?.lat != null && shopAddress?.lng != null;
+  const hasShopAddress = !!(shopAddress?.formatted?.trim());
 
   const handleSaveDeliverySettings = async () => {
     if (!store) return;
@@ -225,7 +214,7 @@ export default function SettingsPage() {
       toast.error("Enable at least one delivery method");
       return;
     }
-    if (pickupEnabled && !hasShopCoordinates) {
+    if (pickupEnabled && !hasShopAddress) {
       toast.error("Set your shop address before enabling pickup");
       return;
     }
@@ -235,12 +224,12 @@ export default function SettingsPage() {
         .from('stores')
         .update({
           address_formatted: shopAddress?.formatted || null,
-          address_place_id: shopAddress?.placeId || null,
-          latitude: shopAddress?.lat ?? null,
-          longitude: shopAddress?.lng ?? null,
-          pickup_enabled: pickupEnabled && hasShopCoordinates,
+          address_place_id: null,
+          latitude: null,
+          longitude: null,
+          pickup_enabled: pickupEnabled && hasShopAddress,
           dispatch_enabled: dispatchEnabled,
-          pickup_radius_km: Number(pickupRadiusKm) || 5,
+          pickup_radius_km: null,
         })
         .eq('id', store.id);
       if (error) throw error;
@@ -568,54 +557,32 @@ export default function SettingsPage() {
                   <MapPin className="w-4 h-4 text-primary" />
                   <h3 className="text-sm font-bold text-foreground">Shop Address</h3>
                 </div>
-                <p className="text-xs text-muted-foreground">Required to offer pickup. Customers can get directions to your store.</p>
+                <p className="text-xs text-muted-foreground">Required to offer pickup. Customers will see this address when choosing pickup at checkout.</p>
                 <AddressAutocomplete
                   value={shopAddress?.formatted || ""}
                   onChange={setShopAddress}
-                  placeholder="Search your shop address..."
+                  placeholder="Type your shop address..."
                 />
-                {hasShopCoordinates && (
-                  <StaticMapPreview
-                    lat={shopAddress!.lat!}
-                    lng={shopAddress!.lng!}
-                    address={shopAddress!.formatted}
-                  />
-                )}
               </div>
 
-              <div className="flex flex-col gap-4 p-5 lg:p-6 rounded-[32px] bg-muted/30 border border-border">
-                <h3 className="text-sm font-bold text-foreground">Pickup Radius</h3>
-                <p className="text-xs text-muted-foreground">Customers within this distance will see pickup recommended at checkout.</p>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={pickupRadiusKm}
-                    onChange={(e) => setPickupRadiusKm(e.target.value)}
-                    className="w-24 px-4 py-3 rounded-xl bg-background border border-border focus:border-primary/50 outline-none text-sm font-medium text-foreground"
-                  />
-                  <span className="text-sm text-muted-foreground font-medium">km</span>
-                </div>
-              </div>
 
               <div className="flex flex-col gap-4">
                 <h3 className="text-sm font-bold text-foreground px-1">Delivery Methods</h3>
                 <label className={cn(
                   "flex items-center gap-3 p-4 rounded-2xl bg-card border border-border transition-all",
-                  !hasShopCoordinates ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-primary/30",
+                  !hasShopAddress ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-primary/30",
                 )}>
                   <input
                     type="checkbox"
                     checked={pickupEnabled}
-                    disabled={!hasShopCoordinates}
+                    disabled={!hasShopAddress}
                     onChange={(e) => setPickupEnabled(e.target.checked)}
                     className="w-5 h-5 rounded border-border text-primary focus:ring-primary accent-primary"
                   />
                   <div className="flex flex-col">
                     <span className="font-bold text-sm text-foreground">Offer Pickup</span>
                     <span className="text-[10px] text-muted-foreground">
-                      {hasShopCoordinates
+                      {hasShopAddress
                         ? "Customers collect from your shop — no delivery fee"
                         : "Save a shop address above to enable pickup"}
                     </span>

@@ -31,7 +31,6 @@ import { toast } from "sonner";
 import { getSessionItem, removeSessionItem } from "@/lib/safe-storage";
 import { getAppHost, getStoreUrl } from "@/lib/urls";
 import { AddressAutocomplete } from "@/components/maps/address-autocomplete";
-import { StaticMapPreview } from "@/components/maps/static-map-preview";
 import type { GeoLocation } from "@/lib/types";
 
 const formatWhatsAppNumber = (phone: string): string => {
@@ -239,10 +238,10 @@ export function OnboardingWizard() {
           channels: socials,
           status: "Live",
           address_formatted: shopAddress?.formatted || null,
-          address_place_id: shopAddress?.placeId || null,
-          latitude: shopAddress?.lat ?? null,
-          longitude: shopAddress?.lng ?? null,
-          pickup_enabled: !!(shopAddress?.lat != null && shopAddress?.lng != null),
+          address_place_id: null,
+          latitude: null,
+          longitude: null,
+          pickup_enabled: !!(shopAddress?.formatted?.trim()),
           dispatch_enabled: true,
         })
         .select("id")
@@ -442,7 +441,7 @@ export function OnboardingWizard() {
               <div className="bg-muted p-4 rounded-2xl border border-border flex gap-3 text-sm text-muted-foreground">
                 <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <p>
-                  <strong className="font-black text-foreground">Optional:</strong> Add your shop address now to offer pickup later. You can skip and set this in Settings anytime.
+                  <strong className="font-black text-foreground">Optional:</strong> Type your shop address so customers know where to pick up orders. You can skip and set this in Settings anytime.
                 </p>
               </div>
               <div className="flex flex-col gap-2">
@@ -453,13 +452,6 @@ export function OnboardingWizard() {
                   placeholder="Search your shop address..."
                 />
               </div>
-              {shopAddress?.lat != null && shopAddress?.lng != null && (
-                <StaticMapPreview
-                  lat={shopAddress.lat}
-                  lng={shopAddress.lng}
-                  address={shopAddress.formatted}
-                />
-              )}
             </motion.div>
           )}
 

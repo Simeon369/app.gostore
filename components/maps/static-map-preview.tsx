@@ -1,19 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { getDirectionsUrl } from "@/lib/geo";
 import { MapPin, Navigation } from "lucide-react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
 
-const customIcon = typeof window !== 'undefined' ? new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-}) : null;
-
+const LeafletMap = dynamic(() => import("./leaflet-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-xs font-medium">
+      Loading map...
+    </div>
+  ),
+});
 
 interface StaticMapPreviewProps {
   lat: number;
@@ -41,18 +39,7 @@ export function StaticMapPreview({
         </div>
       )}
       <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-border bg-muted">
-        <MapContainer
-          center={[lat, lng]}
-          zoom={15}
-          scrollWheelZoom={false}
-          style={{ width: "100%", height: "100%", zIndex: 0 }}
-          attributionControl={false}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {customIcon && <Marker position={[lat, lng]} icon={customIcon} />}
-        </MapContainer>
+        <LeafletMap lat={lat} lng={lng} />
       </div>
       {showDirections && (
         <a
@@ -68,3 +55,4 @@ export function StaticMapPreview({
     </div>
   );
 }
+
