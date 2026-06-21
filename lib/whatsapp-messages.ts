@@ -44,10 +44,10 @@ export function generateVendorPaidNotification(
 ): string {
   const items = parseItems(order.items);
   const orderRef = order.id.split("-")[0].toUpperCase();
-  const deliveryLine =
-    order.delivery_method === "pickup"
-      ? `\n*Delivery:* Pickup — customer will collect from your store${store.address_formatted ? `\n*Pickup address:* ${store.address_formatted}` : ""}`
-      : `\n*Delivery:* Dispatch — delivery fee paid to rider on arrival`;
+  const isPickup = order.delivery_method === "pickup";
+  const deliveryLine = isPickup
+    ? `\n*Delivery:* Pickup — customer will collect from your store${store.address_formatted ? `\n*Pickup address:* ${store.address_formatted}` : ""}`
+    : `\n*Delivery:* Dispatch — delivery address: ${order.customer_address || "Not provided"}\n*Delivery fee:* Paid to rider on arrival`;
 
   return `
 New paid order for *${store.name}*!
@@ -61,7 +61,7 @@ ${formatItemsList(items)}
 
 *Total:* ₦${Number(order.total).toLocaleString()}
 
-Please prepare this order${order.delivery_method === "pickup" ? " for pickup" : " for shipping"}. Mark the order as shipped from your GoStore dashboard when ready.
+Please prepare this order${isPickup ? ". When ready, mark it as *Set for Pickup* from your GoStore dashboard" : ". When shipped, mark it as *Shipped* from your GoStore dashboard"}.
 `.trim();
 }
 
@@ -71,18 +71,18 @@ export function generateCustomerPaymentConfirmedMessage(
 ): string {
   const items = parseItems(order.items);
   const orderRef = order.id.split("-")[0].toUpperCase();
+  const isPickup = order.delivery_method === "pickup";
   const trackingUrl = store.slug
     ? `${process.env.NEXT_PUBLIC_APP_URL}/store/${store.slug}/track?orderId=${orderRef}`
     : undefined;
-  const deliveryNote =
-    order.delivery_method === "pickup"
-      ? "You'll collect this order from the vendor's store."
-      : "Delivery fee will be paid directly to the rider when your order arrives.";
+  const deliveryNote = isPickup
+    ? `You chose *Pickup* — you'll collect this order directly from the vendor's store.${store.address_formatted ? `\n📍 *Pickup address:* ${store.address_formatted}` : ""}`
+    : `You chose *Doorstep Delivery* — the delivery fee will be paid directly to the rider when your order arrives.`;
 
   return `
 Hi ${order.customer_name} 👋
 
-Your payment for order *#${orderRef}* from *${store.name}* has been confirmed!
+Your payment for order *#${orderRef}* from *${store.name}* has been confirmed! ✅
 
 *Items:*
 ${formatItemsList(items)}
@@ -91,7 +91,7 @@ ${formatItemsList(items)}
 
 ${deliveryNote}
 
-The vendor is now preparing your order. We'll notify you when it ships.${trackingUrl ? `\n\nTrack your order: ${trackingUrl}` : ""}
+The vendor is now preparing your order. We'll notify you when it's ${isPickup ? "ready for pickup" : "shipped"}.${trackingUrl ? `\n\nTrack your order: ${trackingUrl}` : ""}
 
 Thank you for shopping with us! 🙏
 `.trim();
@@ -103,12 +103,12 @@ export function generateShippingMessageForOrder(
   trackingUrl?: string,
 ): string {
   const items = parseItems(order.items);
-  const deliveryNote =
-    order.delivery_method === "pickup"
-      ? store.address_formatted
-        ? `Collect from: ${store.address_formatted}`
-        : "Your order is ready for pickup at the vendor store."
-      : "Delivery fee to be paid to the rider on arrival.";
+  const isPickup = order.delivery_method === "pickup";
+  const deliveryNote = isPickup
+    ? store.address_formatted
+      ? `Your order is ready for pickup! Collect from: ${store.address_formatted}`
+      : "Your order is ready for pickup at the vendor's store."
+    : "Delivery fee to be paid to the rider on arrival.";
 
   return generateShippingMessage({
     orderId: order.id,
@@ -119,5 +119,6 @@ export function generateShippingMessageForOrder(
     total: Number(order.total),
     trackingUrl,
     deliveryNote,
+    isPickup,
   });
 }

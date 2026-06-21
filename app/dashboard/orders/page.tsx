@@ -77,8 +77,8 @@ export default function OrdersPage() {
         onSuccess: () => {
           toast.success(
             order.delivery_method === "pickup"
-              ? "Order marked as ready for pickup!"
-              : "Order marked as shipped!",
+              ? "Order set for pickup!"
+              : "Order shipped!",
           );
         },
       },
@@ -234,7 +234,11 @@ export default function OrdersPage() {
                     )}
                     {order.status === "Pending"
                       ? "Awaiting Confirmation"
-                      : order.status}
+                      : order.status === "Shipped"
+                        ? order.delivery_method === "pickup"
+                          ? "Set for Pickup"
+                          : "Shipped"
+                        : order.status}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-6">
@@ -391,11 +395,11 @@ export default function OrdersPage() {
                     ) : (
                       <ExternalLink className="w-4 h-4" />
                     )}
-                    {updatingOrderId === order.id
-                      ? "Updating..."
-                      : order.delivery_method === "pickup"
-                        ? "Mark Ready for Pickup"
-                        : "Mark as Shipped"}
+                     {updatingOrderId === order.id
+                        ? "Updating..."
+                        : order.delivery_method === "pickup"
+                          ? "Set for Pickup"
+                          : "Ship"}
                   </button>
                 )}
                 {order.status === "Pending" && (

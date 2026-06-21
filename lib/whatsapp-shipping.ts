@@ -19,6 +19,7 @@ export interface ShippingMessageData {
   total: number;
   trackingUrl?: string;
   deliveryNote?: string;
+  isPickup?: boolean;
 }
 
 export function generateShippingMessage(data: ShippingMessageData): string {
@@ -35,10 +36,14 @@ export function generateShippingMessage(data: ShippingMessageData): string {
 
   const deliveryNote = data.deliveryNote ? `\n\n📝 ${data.deliveryNote}` : "";
 
+  const headline = data.isPickup
+    ? `Great news! Your order from *${data.storeName}* is ready for pickup! 📦`
+    : `Great news! Your order from *${data.storeName}* has been shipped! 🚚`;
+
   const message = `
 Hi ${data.customerName} 👋
 
-Great news! Your order from *${data.storeName}* has been shipped! 🚚
+${headline}
 
 *Order Details:*
 Order ID: #${data.orderId.slice(0, 8).toUpperCase()}

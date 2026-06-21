@@ -22,7 +22,7 @@ import { formatOrderDeliveryFee } from "@/lib/delivery-utils";
 
 function getTrackingSteps(deliveryMethod?: string | null) {
   const shippedLabel =
-    deliveryMethod === "pickup" ? "Ready for Pickup" : "Order Shipped";
+    deliveryMethod === "pickup" ? "Set for Pickup" : "Shipped";
   const shippedDescription =
     deliveryMethod === "pickup"
       ? "Your order is ready to collect from the vendor."
