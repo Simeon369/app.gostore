@@ -46,6 +46,9 @@ export async function POST(req: Request) {
     const customerPhone = formData.get("customer_phone") as string;
     const customerEmail = formData.get("customer_email") as string;
     const customerAddress = formData.get("customer_address") as string;
+    const deliveryMethod = (formData.get("delivery_method") as string) || "dispatch";
+    const customerLatitudeRaw = formData.get("customer_latitude") as string | null;
+    const customerLongitudeRaw = formData.get("customer_longitude") as string | null;
     const itemsRaw = formData.get("items") as string;
     const total = Number(formData.get("total"));
     const deliveryFee = Number(formData.get("delivery_fee") || 0);
@@ -56,12 +59,19 @@ export async function POST(req: Request) {
       !storeSlug ||
       !customerName ||
       !customerPhone ||
-      !customerAddress ||
       !itemsRaw ||
-      !total
+      !total ||
+      !deliveryMethod
     ) {
       return NextResponse.json(
         { error: "Missing required order fields" },
+        { status: 400 },
+      );
+    }
+
+    if (deliveryMethod === "dispatch" && !customerAddress?.trim()) {
+      return NextResponse.json(
+        { error: "Delivery address is required for dispatch orders" },
         { status: 400 },
       );
     }
@@ -87,10 +97,13 @@ export async function POST(req: Request) {
         customer_name: customerName,
         customer_phone: customerPhone,
         customer_email: customerEmail || null,
-        customer_address: customerAddress,
+        customer_address: customerAddress || "Pickup at vendor store",
         items,
         total,
         delivery_fee: deliveryFee,
+        delivery_method: deliveryMethod,
+        customer_latitude: customerLatitudeRaw ? Number(customerLatitudeRaw) : null,
+        customer_longitude: customerLongitudeRaw ? Number(customerLongitudeRaw) : null,
         status: "Pending",
         payment_reference: paymentReference,
         payment_method: "manual_transfer",

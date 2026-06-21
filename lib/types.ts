@@ -28,6 +28,25 @@ export type OrderStatus =
 
 export type PayoutStatus = "unsettled" | "settled";
 
+export type DeliveryMethod = "pickup" | "dispatch";
+
+export interface GeoLocation {
+  formatted: string;
+  placeId?: string;
+  lat?: number;
+  lng?: number;
+}
+
+export interface StoreLocation {
+  addressFormatted?: string;
+  addressPlaceId?: string;
+  latitude?: number;
+  longitude?: number;
+  pickupEnabled?: boolean;
+  dispatchEnabled?: boolean;
+  pickupRadiusKm?: number;
+}
+
 export interface OrderItem {
   productId: string;
   quantity: number;
@@ -48,6 +67,9 @@ export interface Order {
   customerPhone: string;
   customerEmail?: string;
   customerAddress: string;
+  customerLatitude?: number;
+  customerLongitude?: number;
+  deliveryMethod?: DeliveryMethod;
   items: OrderItem[];
   total: number;
   deliveryFee: number;

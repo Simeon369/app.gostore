@@ -19,6 +19,7 @@ import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getDeliveryMethodLabel, formatOrderDeliveryFee } from "@/lib/delivery-utils";
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,7 +61,6 @@ export default function OrdersPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      toast.success("Order marked as shipped!");
     },
     onError: (error) => {
       toast.error(error.message);
@@ -70,8 +70,19 @@ export default function OrdersPage() {
     },
   });
 
-  const handleShipOrder = (orderId: string) => {
-    updateOrderStatus.mutate({ orderId, status: "Shipped" });
+  const handleShipOrder = (order: { id: string; delivery_method?: string | null }) => {
+    updateOrderStatus.mutate(
+      { orderId: order.id, status: "Shipped" },
+      {
+        onSuccess: () => {
+          toast.success(
+            order.delivery_method === "pickup"
+              ? "Order marked as ready for pickup!"
+              : "Order marked as shipped!",
+          );
+        },
+      },
+    );
   };
 
   const { data: ordersData, isLoading } = useQuery({
@@ -243,6 +254,14 @@ export default function OrdersPage() {
                       {order.source || "Direct"}
                     </span>
                   </div>
+                  <div>
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">
+                      Delivery
+                    </p>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/10 text-[10px] font-bold text-primary">
+                      {getDeliveryMethodLabel(order.delivery_method)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -275,7 +294,9 @@ export default function OrdersPage() {
                     <div className="flex items-start gap-2 text-sm text-muted-foreground font-medium">
                       <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                       <p className="leading-relaxed">
-                        {order.customer_address}
+                        {order.delivery_method === "pickup"
+                          ? "Customer will collect from your store"
+                          : order.customer_address}
                       </p>
                     </div>
                   </div>
@@ -342,7 +363,7 @@ export default function OrdersPage() {
                     <div className="flex justify-between text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                       <span>DELIVERY FEE</span>
                       <span>
-                        ₦{Number(order.delivery_fee).toLocaleString()}
+                        {formatOrderDeliveryFee(order.delivery_fee, order.delivery_method)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -361,7 +382,7 @@ export default function OrdersPage() {
               <div className="flex gap-3">
                 {order.status === "Paid" && (
                   <button
-                    onClick={() => handleShipOrder(order.id)}
+                    onClick={() => handleShipOrder(order)}
                     disabled={updatingOrderId === order.id}
                     className="flex-1 sm:flex-none px-6 py-3 rounded-2xl brand-gradient hover:opacity-90 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-primary-foreground disabled:opacity-50"
                   >
@@ -371,8 +392,10 @@ export default function OrdersPage() {
                       <ExternalLink className="w-4 h-4" />
                     )}
                     {updatingOrderId === order.id
-                      ? "Shipping..."
-                      : "Mark as Shipped"}
+                      ? "Updating..."
+                      : order.delivery_method === "pickup"
+                        ? "Mark Ready for Pickup"
+                        : "Mark as Shipped"}
                   </button>
                 )}
                 {order.status === "Pending" && (

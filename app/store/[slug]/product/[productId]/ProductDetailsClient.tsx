@@ -21,6 +21,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { CheckoutModal } from "@/components/store/checkout-modal";
+import { StaticMapPreview } from "@/components/maps/static-map-preview";
 import { Instagram, TikTok } from "@/components/icons";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -854,6 +855,20 @@ export default function ProductDetailsClient() {
               </button>
             </div>
 
+            {/* Pickup Available */}
+            {store.pickup_enabled && store.latitude != null && store.longitude != null && (
+              <div className="p-4 rounded-2xl bg-muted/30 border border-border flex flex-col gap-3 mt-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Pickup Available
+                </p>
+                <StaticMapPreview
+                  lat={store.latitude}
+                  lng={store.longitude}
+                  address={store.address_formatted}
+                />
+              </div>
+            )}
+
             {/* Trust Strip */}
             <div className="grid grid-cols-3 gap-2 bg-muted/30 border border-border p-4 rounded-2xl text-center mt-2">
               <div className="flex flex-col items-center gap-1">
@@ -871,7 +886,7 @@ export default function ProductDetailsClient() {
               <div className="flex flex-col items-center gap-1">
                 <Truck className="w-4 h-4 text-primary" />
                 <span className="text-[8px] md:text-[9px] font-black uppercase tracking-wider text-foreground">
-                  Direct Delivery
+                  Pickup or Dispatch
                 </span>
               </div>
             </div>

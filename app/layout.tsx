@@ -59,10 +59,10 @@ export default function RootLayout({
           storageKey="gostore-app-theme"
         >
           <QueryProvider>
-            <MotionProvider>
-              {children}
-              <ThemeAwareToaster />
-            </MotionProvider>
+              <MotionProvider>
+                {children}
+                <ThemeAwareToaster />
+              </MotionProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

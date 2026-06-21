@@ -59,7 +59,10 @@ export async function GET(req: Request) {
           customer_address: meta.customer_address,
           items: typeof meta.items === 'string' ? JSON.parse(meta.items) : meta.items,
           total: meta.total,
-          delivery_fee: meta.delivery_fee,
+          delivery_fee: meta.delivery_fee ?? 0,
+          delivery_method: meta.delivery_method || 'dispatch',
+          customer_latitude: meta.customer_latitude ?? null,
+          customer_longitude: meta.customer_longitude ?? null,
           payment_reference: paymentReference,
           status: 'Paid',
           source: meta.source || 'Direct'

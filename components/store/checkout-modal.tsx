@@ -4,23 +4,26 @@ import { motion } from "framer-motion";
 import {
   X,
   Truck,
-  Phone,
   User,
   Loader2,
   ArrowRight,
-  Mail,
   Building2,
   Copy,
   Upload,
   CheckCircle2,
   FileText,
+  Package,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cn } from "@/utils/cn";
 import { toast } from "sonner";
 import { getPlatformBankDetails, isManualTransferMode } from "@/lib/payment-config";
+import { AddressAutocomplete } from "@/components/maps/address-autocomplete";
+import { StaticMapPreview } from "@/components/maps/static-map-preview";
+import { isWithinPickupRadius } from "@/lib/geo";
+import type { DeliveryMethod, GeoLocation } from "@/lib/types";
 
 interface CheckoutModalProps {
   product: any;
@@ -31,7 +34,8 @@ interface CheckoutModalProps {
 export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedZone, setSelectedZone] = useState<any>(null);
+  const userPickedMethod = useRef(false);
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(null);
   const [loading, setLoading] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
@@ -40,25 +44,69 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
-  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerLocation, setCustomerLocation] = useState<GeoLocation | null>(null);
 
-  const zones = store.delivery_zones || store.deliveryZones || [];
-  const isPayOnArrival = store.delivery_payment_option === "arrival";
+  const pickupEnabled = !!store.pickup_enabled;
+  const dispatchEnabled = store.dispatch_enabled !== false;
+  const vendorLat = store.latitude;
+  const vendorLng = store.longitude;
+  const pickupRadiusKm = Number(store.pickup_radius_km ?? 5);
+  const hasVendorLocation = vendorLat != null && vendorLng != null;
+
+  const pickupRecommended = useMemo(() => {
+    if (
+      !pickupEnabled ||
+      !hasVendorLocation ||
+      customerLocation?.lat == null ||
+      customerLocation?.lng == null
+    ) {
+      return false;
+    }
+    return isWithinPickupRadius(
+      { lat: vendorLat, lng: vendorLng },
+      { lat: customerLocation.lat, lng: customerLocation.lng },
+      pickupRadiusKm,
+    );
+  }, [pickupEnabled, hasVendorLocation, customerLocation, vendorLat, vendorLng, pickupRadiusKm]);
+
   const manualMode = isManualTransferMode();
   const bankDetails = getPlatformBankDetails();
+  const checkoutTotal = Number(product.price);
+  const deliveryFee = 0;
 
-  const deliveryFee = selectedZone ? Number(selectedZone.price) : 0;
-  const total = Number(product.price) + deliveryFee;
-  const checkoutTotal = isPayOnArrival ? Number(product.price) : total;
+  const customerAddress =
+    deliveryMethod === "pickup"
+      ? store.address_formatted || "Pickup at vendor store"
+      : customerLocation?.formatted || "";
+
+  useEffect(() => {
+    if (userPickedMethod.current) return;
+
+    if (pickupEnabled && !dispatchEnabled) {
+      setDeliveryMethod("pickup");
+    } else if (!pickupEnabled && dispatchEnabled) {
+      setDeliveryMethod("dispatch");
+    } else if (pickupEnabled && dispatchEnabled) {
+      setDeliveryMethod(pickupRecommended ? "pickup" : "dispatch");
+    }
+  }, [pickupEnabled, dispatchEnabled, pickupRecommended]);
+
+  const hasValidDelivery =
+    (deliveryMethod === "pickup" && pickupEnabled) ||
+    (deliveryMethod === "dispatch" && dispatchEnabled);
+
+  const hasValidAddress =
+    deliveryMethod === "pickup" ||
+    (deliveryMethod === "dispatch" && !!customerLocation?.formatted?.trim());
 
   const canPlaceOrder =
     manualMode &&
     receiptFile !== null &&
-    (zones.length === 0 || selectedZone !== null) &&
+    hasValidDelivery &&
+    hasValidAddress &&
     customerName &&
     customerPhone &&
-    customerEmail &&
-    customerAddress;
+    customerEmail;
 
   useEffect(() => {
     if (manualMode) {
@@ -84,7 +132,6 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     setReceiptPreview(null);
   }, [receiptFile]);
 
-  // Load Paystack SDK only in paystack mode
   useEffect(() => {
     if (manualMode) return;
     const script = document.createElement("script");
@@ -117,6 +164,27 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     setReceiptFile(file);
   };
 
+  const orderItems = [
+    {
+      productId: product.id,
+      quantity: 1,
+      price: product.price,
+      name: product.name,
+      variants: {
+        size_or_length: product.selectedSize || undefined,
+        color: product.selectedColor || undefined,
+        texture: product.selectedTexture || undefined,
+        type: product.selectedType || undefined,
+      },
+    },
+  ];
+
+  const buildOrderPayload = () => ({
+    delivery_method: deliveryMethod,
+    customer_latitude: customerLocation?.lat ?? null,
+    customer_longitude: customerLocation?.lng ?? null,
+  });
+
   const handlePaystackCheckout = async () => {
     const paymentRef = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -124,6 +192,8 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     if (!window.PaystackPop) {
       throw new Error("Payment gateway is still loading. Please wait a moment and try again.");
     }
+
+    const payload = buildOrderPayload();
 
     // @ts-ignore
     const handler = window.PaystackPop.setup({
@@ -139,19 +209,10 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
         customer_phone: customerPhone,
         customer_email: customerEmail,
         customer_address: customerAddress,
-        items: JSON.stringify([
-          {
-            productId: product.id,
-            quantity: 1,
-            price: product.price,
-            variants: {
-              size_or_length: product.selectedSize || undefined,
-              color: product.selectedColor || undefined,
-              texture: product.selectedTexture || undefined,
-              type: product.selectedType || undefined,
-            },
-          },
-        ]),
+        customer_latitude: payload.customer_latitude,
+        customer_longitude: payload.customer_longitude,
+        delivery_method: payload.delivery_method,
+        items: JSON.stringify(orderItems),
         total: checkoutTotal,
         delivery_fee: deliveryFee,
         source: new URLSearchParams(window.location.search).get("source") || "Direct",
@@ -173,6 +234,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
       return;
     }
 
+    const payload = buildOrderPayload();
     const formData = new FormData();
     formData.append("receipt", receiptFile);
     formData.append("store_id", store.id);
@@ -181,25 +243,16 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     formData.append("customer_phone", customerPhone);
     formData.append("customer_email", customerEmail);
     formData.append("customer_address", customerAddress);
-    formData.append(
-      "items",
-      JSON.stringify([
-        {
-          productId: product.id,
-          quantity: 1,
-          price: product.price,
-          name: product.name,
-          variants: {
-            size_or_length: product.selectedSize || undefined,
-            color: product.selectedColor || undefined,
-            texture: product.selectedTexture || undefined,
-            type: product.selectedType || undefined,
-          },
-        },
-      ]),
-    );
+    formData.append("items", JSON.stringify(orderItems));
     formData.append("total", String(checkoutTotal));
-    formData.append("delivery_fee", String(isPayOnArrival ? 0 : deliveryFee));
+    formData.append("delivery_fee", "0");
+    formData.append("delivery_method", deliveryMethod || "dispatch");
+    if (payload.customer_latitude != null) {
+      formData.append("customer_latitude", String(payload.customer_latitude));
+    }
+    if (payload.customer_longitude != null) {
+      formData.append("customer_longitude", String(payload.customer_longitude));
+    }
     formData.append(
       "source",
       new URLSearchParams(window.location.search).get("source") || "Direct",
@@ -224,8 +277,18 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedZone && zones?.length > 0) {
-      toast.error("Please select a delivery zone");
+    if (!pickupEnabled && !dispatchEnabled) {
+      toast.error("This store has no delivery options configured");
+      return;
+    }
+
+    if (!deliveryMethod) {
+      toast.error("Please select a delivery method");
+      return;
+    }
+
+    if (deliveryMethod === "dispatch" && !customerLocation?.formatted?.trim()) {
+      toast.error("Please enter your delivery address");
       return;
     }
 
@@ -244,11 +307,25 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
       }
     } catch (error: unknown) {
       console.error("Checkout error:", error);
-      const message = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+      const message =
+        error instanceof Error ? error.message : "Something went wrong. Please try again.";
       toast.error(message);
       setLoading(false);
     }
   };
+
+  if (!pickupEnabled && !dispatchEnabled) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="bg-background p-8 rounded-3xl border border-border max-w-md text-center">
+          <p className="text-muted-foreground mb-4">This store has not configured delivery options yet.</p>
+          <button onClick={onClose} className="px-6 py-3 rounded-2xl brand-gradient text-primary-foreground font-bold">
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
@@ -316,14 +393,6 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                   required
                   className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm"
                 />
-                <textarea
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="Delivery Address"
-                  required
-                  rows={2}
-                  className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm resize-none"
-                />
               </div>
             </div>
 
@@ -331,33 +400,93 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
               <div className="flex items-center gap-2 mb-2">
                 <Truck className="w-4 h-4 text-primary" />
                 <h3 className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
-                  Delivery Zone
+                  Delivery Method
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 gap-2">
-                {zones?.map((zone: { name: string; price: number }) => (
+                {pickupEnabled && (
                   <button
-                    key={zone.name}
+                    key="pickup"
                     type="button"
-                    onClick={() => setSelectedZone(zone)}
+                    onClick={() => {
+                      userPickedMethod.current = true;
+                      setDeliveryMethod("pickup");
+                    }}
                     className={cn(
-                      "flex items-center justify-between p-4 rounded-2xl border transition-all text-sm",
-                      selectedZone?.name === zone.name
+                      "flex items-center justify-between p-4 rounded-2xl border transition-all text-sm text-left",
+                      deliveryMethod === "pickup"
                         ? "bg-primary/10 border-primary text-primary font-bold"
                         : "bg-muted border-border text-muted-foreground hover:border-primary/30",
                     )}
                   >
-                    <span>{zone.name}</span>
-                    <span>+ ₦{Number(zone.price).toLocaleString()}</span>
+                    <div className="flex items-center gap-3">
+                      <Package className="w-4 h-4 flex-shrink-0" />
+                      <div>
+                        <span className="block">Pickup — Free</span>
+                        <span className="text-[10px] font-normal opacity-80">Collect from vendor</span>
+                      </div>
+                    </div>
+                    {pickupRecommended && (
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-primary/20 px-2 py-1 rounded-full">
+                        Recommended
+                      </span>
+                    )}
                   </button>
-                ))}
-                {zones.length === 0 && (
-                  <p className="text-xs text-muted-foreground p-4 bg-muted rounded-2xl italic">
-                    No delivery zones configured. Shipping is free.
-                  </p>
+                )}
+                {dispatchEnabled && (
+                  <button
+                    key="dispatch"
+                    type="button"
+                    onClick={() => {
+                      userPickedMethod.current = true;
+                      setDeliveryMethod("dispatch");
+                    }}
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-2xl border transition-all text-sm text-left",
+                      deliveryMethod === "dispatch"
+                        ? "bg-primary/10 border-primary text-primary font-bold"
+                        : "bg-muted border-border text-muted-foreground hover:border-primary/30",
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Truck className="w-4 h-4 flex-shrink-0" />
+                      <div>
+                        <span className="block">Dispatch Delivery</span>
+                        <span className="text-[10px] font-normal opacity-80">Fee paid to rider on arrival</span>
+                      </div>
+                    </div>
+                  </button>
                 )}
               </div>
+
+              {deliveryMethod === "pickup" && hasVendorLocation && (
+                <StaticMapPreview
+                  lat={vendorLat}
+                  lng={vendorLng}
+                  address={store.address_formatted}
+                />
+              )}
+
+              {deliveryMethod === "dispatch" && (
+                <div className="flex flex-col gap-3">
+                  <AddressAutocomplete
+                    value={customerLocation?.formatted || ""}
+                    onChange={setCustomerLocation}
+                    placeholder="Delivery address"
+                    required
+                  />
+                  <p className="text-[11px] text-muted-foreground leading-relaxed px-1">
+                    Delivery fee is paid directly to the dispatch rider when your order arrives. It is not included in this payment.
+                  </p>
+                </div>
+              )}
+
+              {dispatchEnabled && pickupEnabled && customerLocation?.lat != null && (
+                <p className="text-[10px] text-muted-foreground italic px-1">
+                  Enter your address to see if pickup is recommended based on distance.
+                </p>
+              )}
             </div>
 
             {manualMode && (
@@ -396,9 +525,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                       <span className="text-muted-foreground">Amount</span>
                       <button
                         type="button"
-                        onClick={() =>
-                          copyToClipboard(String(checkoutTotal), "Amount")
-                        }
+                        onClick={() => copyToClipboard(String(checkoutTotal), "Amount")}
                         className="font-black text-primary flex items-center gap-1.5"
                       >
                         ₦{checkoutTotal.toLocaleString()}
@@ -409,9 +536,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                       <span className="text-muted-foreground">Reference</span>
                       <button
                         type="button"
-                        onClick={() =>
-                          copyToClipboard(paymentReference, "Reference")
-                        }
+                        onClick={() => copyToClipboard(paymentReference, "Reference")}
                         className="font-mono font-bold flex items-center gap-1.5 hover:text-primary transition-colors"
                       >
                         {paymentReference}
@@ -497,22 +622,22 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
 
             <div className="p-6 rounded-3xl bg-muted border border-border flex flex-col gap-3">
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Subtotal</span>
+                <span>Product Total</span>
                 <span>₦{Number(product.price).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Delivery Fee</span>
                 <span>
-                  {selectedZone
-                    ? `₦${deliveryFee.toLocaleString()}`
-                    : zones.length === 0
-                      ? "Free"
-                      : "Select Zone"}
+                  {deliveryMethod === "pickup"
+                    ? "Free (pickup)"
+                    : deliveryMethod === "dispatch"
+                      ? "Paid to rider on arrival"
+                      : "—"}
                 </span>
               </div>
               <div className="h-[1px] bg-border my-1" />
               <div className="flex justify-between items-center">
-                <span className="font-bold">Total to Pay</span>
+                <span className="font-bold">Total to Pay Now</span>
                 <span className="text-xl font-black text-primary">
                   ₦{checkoutTotal.toLocaleString()}
                 </span>
@@ -521,15 +646,19 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
 
             <button
               type="submit"
-              disabled={(!selectedZone && zones?.length > 0) || loading || (manualMode && !canPlaceOrder)}
+              disabled={!deliveryMethod || loading || (manualMode && !canPlaceOrder)}
               className="w-full py-5 rounded-[24px] brand-gradient text-primary-foreground font-black text-lg shadow-[0_0_30px_rgba(158,226,55,0.3)] hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : manualMode ? (
-                <>Place Order <ArrowRight className="w-5 h-5" /></>
+                <>
+                  Place Order <ArrowRight className="w-5 h-5" />
+                </>
               ) : (
-                <>Pay Now <ArrowRight className="w-5 h-5" /></>
+                <>
+                  Pay Now <ArrowRight className="w-5 h-5" />
+                </>
               )}
             </button>
 

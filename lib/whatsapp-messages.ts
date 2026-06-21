@@ -14,12 +14,15 @@ interface OrderMessageData {
   total: number;
   items: ShippingItem[] | string;
   delivery_fee?: number;
+  delivery_method?: string | null;
+  customer_address?: string | null;
 }
 
 interface StoreMessageData {
   name: string;
   whatsapp?: string | null;
   slug?: string;
+  address_formatted?: string | null;
 }
 
 function parseItems(items: ShippingItem[] | string): ShippingItem[] {
@@ -41,20 +44,24 @@ export function generateVendorPaidNotification(
 ): string {
   const items = parseItems(order.items);
   const orderRef = order.id.split("-")[0].toUpperCase();
+  const deliveryLine =
+    order.delivery_method === "pickup"
+      ? `\n*Delivery:* Pickup — customer will collect from your store${store.address_formatted ? `\n*Pickup address:* ${store.address_formatted}` : ""}`
+      : `\n*Delivery:* Dispatch — delivery fee paid to rider on arrival`;
 
   return `
 New paid order for *${store.name}*!
 
 *Order ID:* #${orderRef}
 *Customer:* ${order.customer_name}
-*Phone:* ${order.customer_phone || "N/A"}
+*Phone:* ${order.customer_phone || "N/A"}${deliveryLine}
 
 *Items:*
 ${formatItemsList(items)}
 
 *Total:* ₦${Number(order.total).toLocaleString()}
 
-Please prepare this order for shipping. Mark the order as shipped from your GoStore dashboard when you have shipped the order.
+Please prepare this order${order.delivery_method === "pickup" ? " for pickup" : " for shipping"}. Mark the order as shipped from your GoStore dashboard when ready.
 `.trim();
 }
 
@@ -67,6 +74,10 @@ export function generateCustomerPaymentConfirmedMessage(
   const trackingUrl = store.slug
     ? `${process.env.NEXT_PUBLIC_APP_URL}/store/${store.slug}/track?orderId=${orderRef}`
     : undefined;
+  const deliveryNote =
+    order.delivery_method === "pickup"
+      ? "You'll collect this order from the vendor's store."
+      : "Delivery fee will be paid directly to the rider when your order arrives.";
 
   return `
 Hi ${order.customer_name} 👋
@@ -77,6 +88,8 @@ Your payment for order *#${orderRef}* from *${store.name}* has been confirmed!
 ${formatItemsList(items)}
 
 *Total Paid:* ₦${Number(order.total).toLocaleString()}
+
+${deliveryNote}
 
 The vendor is now preparing your order. We'll notify you when it ships.${trackingUrl ? `\n\nTrack your order: ${trackingUrl}` : ""}
 
@@ -90,6 +103,12 @@ export function generateShippingMessageForOrder(
   trackingUrl?: string,
 ): string {
   const items = parseItems(order.items);
+  const deliveryNote =
+    order.delivery_method === "pickup"
+      ? store.address_formatted
+        ? `Collect from: ${store.address_formatted}`
+        : "Your order is ready for pickup at the vendor store."
+      : "Delivery fee to be paid to the rider on arrival.";
 
   return generateShippingMessage({
     orderId: order.id,
@@ -99,5 +118,6 @@ export function generateShippingMessageForOrder(
     items,
     total: Number(order.total),
     trackingUrl,
+    deliveryNote,
   });
 }

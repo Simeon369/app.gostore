@@ -11,7 +11,8 @@ import {
   Copy, 
   ChevronDown, 
   Check, 
-  Search
+  Search,
+  MapPin,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
@@ -29,6 +30,9 @@ import { FaInstagram, FaTiktok, FaWhatsapp } from "react-icons/fa";
 import { toast } from "sonner";
 import { getSessionItem, removeSessionItem } from "@/lib/safe-storage";
 import { getAppHost, getStoreUrl } from "@/lib/urls";
+import { AddressAutocomplete } from "@/components/maps/address-autocomplete";
+import { StaticMapPreview } from "@/components/maps/static-map-preview";
+import type { GeoLocation } from "@/lib/types";
 
 const formatWhatsAppNumber = (phone: string): string => {
   const clean = phone.replace(/\D/g, '');
@@ -151,7 +155,10 @@ export function OnboardingWizard() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  // Step 2 State — verified via Paystack resolve API
+  // Step 2 State — optional shop location
+  const [shopAddress, setShopAddress] = useState<GeoLocation | null>(null);
+
+  // Step 3 State — verified via Paystack resolve API
   const [bankAccount, setBankAccount] = useState<BankAccountFields>({
     bankName: "",
     bankCode: "",
@@ -160,7 +167,7 @@ export function OnboardingWizard() {
     isVerified: false,
   });
 
-  // Step 3 State: Socials
+  // Step 4 State: Socials
   const [socials, setSocials] = useState({
     whatsapp: true,
     instagram: false,
@@ -231,6 +238,12 @@ export function OnboardingWizard() {
           account_name: bankAccount.accountName,
           channels: socials,
           status: "Live",
+          address_formatted: shopAddress?.formatted || null,
+          address_place_id: shopAddress?.placeId || null,
+          latitude: shopAddress?.lat ?? null,
+          longitude: shopAddress?.lng ?? null,
+          pickup_enabled: !!(shopAddress?.lat != null && shopAddress?.lng != null),
+          dispatch_enabled: true,
         })
         .select("id")
         .single();
@@ -302,7 +315,7 @@ export function OnboardingWizard() {
       <div className="p-8 border-b border-border bg-card relative z-10 rounded-t-[40px]">
         <div className="flex flex-col items-center justify-center gap-4 mb-8">
           <div className="flex gap-2">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div 
                 key={i} 
                 className={cn(
@@ -312,20 +325,22 @@ export function OnboardingWizard() {
               />
             ))}
           </div>
-          <span className="text-sm font-bold text-muted-foreground">Step {step} of 4</span>
+          <span className="text-sm font-bold text-muted-foreground">Step {step} of 5</span>
         </div>
 
         <h1 className="text-3xl font-black text-foreground">
           {step === 1 && "The Brand"}
-          {step === 2 && "The Payout"}
-          {step === 3 && "Social Channels"}
-          {step === 4 && "The Launch"}
+          {step === 2 && "Shop Location"}
+          {step === 3 && "The Payout"}
+          {step === 4 && "Social Channels"}
+          {step === 5 && "The Launch"}
         </h1>
         <p className="text-sm text-muted-foreground mt-2">
           {step === 1 && "Let's set up your store identity and generate your unique link."}
-          {step === 2 && "Where should we send your 95% split? We process this instantly."}
-          {step === 3 && "Where do you mostly promote your products?"}
-          {step === 4 && "You are live! Time to start making money."}
+          {step === 2 && "Pin your shop on the map so nearby customers can pick up orders."}
+          {step === 3 && "Where should we send your 95% split? We process this instantly."}
+          {step === 4 && "Where do you mostly promote your products?"}
+          {step === 5 && "You are live! Time to start making money."}
         </p>
       </div>
 
@@ -424,6 +439,39 @@ export function OnboardingWizard() {
               exit="exit"
               className="flex flex-col gap-6"
             >
+              <div className="bg-muted p-4 rounded-2xl border border-border flex gap-3 text-sm text-muted-foreground">
+                <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <p>
+                  <strong className="font-black text-foreground">Optional:</strong> Add your shop address now to offer pickup later. You can skip and set this in Settings anytime.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Shop Address</label>
+                <AddressAutocomplete
+                  value={shopAddress?.formatted || ""}
+                  onChange={setShopAddress}
+                  placeholder="Search your shop address..."
+                />
+              </div>
+              {shopAddress?.lat != null && shopAddress?.lng != null && (
+                <StaticMapPreview
+                  lat={shopAddress.lat}
+                  lng={shopAddress.lng}
+                  address={shopAddress.formatted}
+                />
+              )}
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              variants={stepVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="flex flex-col gap-6"
+            >
               <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex gap-3 text-sm text-primary font-medium">
                 <span className="text-xl leading-none">💡</span>
                 <p>
@@ -435,9 +483,9 @@ export function OnboardingWizard() {
             </motion.div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <motion.div
-              key="step3"
+              key="step4"
               variants={stepVariants}
               initial="initial"
               animate="animate"
@@ -515,9 +563,9 @@ export function OnboardingWizard() {
             </motion.div>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <motion.div
-              key="step4"
+              key="step5"
               variants={stepVariants}
               initial="initial"
               animate="animate"
@@ -566,13 +614,13 @@ export function OnboardingWizard() {
           <span className="w-0" aria-hidden />
         )}
 
-        {step < 4 ? (
+        {step < 5 ? (
           <button 
             type="button"
             onClick={handleNext}
             disabled={
               (step === 1 && (!storeName || !whatsapp || (category === "Other" && !otherCategory))) ||
-              (step === 2 && !bankAccount.isVerified)
+              (step === 3 && !bankAccount.isVerified)
             }
             className="px-8 py-3 rounded-[20px] brand-gradient text-primary-foreground font-black flex items-center gap-2 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(158,226,55,0.2)]"
           >

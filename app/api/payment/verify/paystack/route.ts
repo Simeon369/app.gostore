@@ -50,7 +50,10 @@ export async function GET(req: Request) {
         customer_address: metadata.customer_address,
         items: JSON.parse(metadata.items),
         total: metadata.total,
-        delivery_fee: metadata.delivery_fee,
+        delivery_fee: metadata.delivery_fee ?? 0,
+        delivery_method: metadata.delivery_method || "dispatch",
+        customer_latitude: metadata.customer_latitude ?? null,
+        customer_longitude: metadata.customer_longitude ?? null,
         status: 'Paid',
         payment_reference: reference,
         source: metadata.source || 'Direct'

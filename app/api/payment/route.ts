@@ -73,9 +73,12 @@ export async function POST(req: Request) {
           customer_name: customerName,
           customer_phone: body.customerPhone,
           customer_address: body.customerAddress,
+          customer_latitude: body.customerLatitude,
+          customer_longitude: body.customerLongitude,
+          delivery_method: body.deliveryMethod,
           items: body.items,
           total: amount,
-          delivery_fee: body.deliveryFee,
+          delivery_fee: body.deliveryFee ?? 0,
           source: body.source || 'Direct'
         }
       }

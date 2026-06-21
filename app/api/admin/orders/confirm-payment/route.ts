@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     const { data: order, error: orderError } = await admin
       .from("orders")
-      .select("*, stores(name, slug, whatsapp)")
+      .select("*, stores(name, slug, whatsapp, address_formatted)")
       .eq("id", orderId)
       .single();
 
@@ -90,6 +90,7 @@ export async function POST(req: Request) {
       name: string;
       slug: string;
       whatsapp: string | null;
+      address_formatted?: string | null;
     };
 
     const vendorMessage = generateVendorPaidNotification(order, store);

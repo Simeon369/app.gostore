@@ -18,27 +18,37 @@ import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { cn } from "@/utils/cn";
+import { formatOrderDeliveryFee } from "@/lib/delivery-utils";
 
-const TRACKING_STEPS = [
-  {
-    id: "Pending",
-    label: "Payment Under Review",
-    description: "We're verifying your bank transfer.",
-    icon: Clock,
-  },
-  {
-    id: "Paid",
-    label: "Payment Confirmed",
-    description: "Vendor is preparing your order.",
-    icon: Package,
-  },
-  {
-    id: "Shipped",
-    label: "Order Shipped",
-    description: "Your package is on the way!",
-    icon: Truck,
-  },
-];
+function getTrackingSteps(deliveryMethod?: string | null) {
+  const shippedLabel =
+    deliveryMethod === "pickup" ? "Ready for Pickup" : "Order Shipped";
+  const shippedDescription =
+    deliveryMethod === "pickup"
+      ? "Your order is ready to collect from the vendor."
+      : "Your package is on the way!";
+
+  return [
+    {
+      id: "Pending",
+      label: "Payment Under Review",
+      description: "We're verifying your bank transfer.",
+      icon: Clock,
+    },
+    {
+      id: "Paid",
+      label: "Payment Confirmed",
+      description: "Vendor is preparing your order.",
+      icon: Package,
+    },
+    {
+      id: "Shipped",
+      label: shippedLabel,
+      description: shippedDescription,
+      icon: Truck,
+    },
+  ];
+}
 
 function getActiveStepIndex(status: string): number {
   if (status === "Pending") return 0;
@@ -108,6 +118,7 @@ export default function OrderTrackingClient() {
 
   const activeIndex = orderData ? getActiveStepIndex(orderData.status) : -1;
   const isRejected = orderData?.status === "Rejected";
+  const trackingSteps = getTrackingSteps(orderData?.delivery_method);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -228,6 +239,9 @@ export default function OrderTrackingClient() {
                       <p className="text-sm font-bold text-primary">
                         ₦{Number(orderData.total).toLocaleString()}
                       </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {formatOrderDeliveryFee(orderData.delivery_fee, orderData.delivery_method)}
+                      </p>
                     </div>
                   </div>
 
@@ -248,7 +262,7 @@ export default function OrderTrackingClient() {
                         />
                       )}
 
-                      {TRACKING_STEPS.map((step, index) => {
+                      {trackingSteps.map((step, index) => {
                         const isActive = index <= activeIndex;
                         const Icon = step.icon;
 

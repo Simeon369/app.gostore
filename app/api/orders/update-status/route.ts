@@ -64,16 +64,19 @@ export async function POST(req: Request) {
     if (status === 'Shipped' && order.customer_email) {
       const shortId = order.id.split('-')[0].toUpperCase();
       const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/store/${order.stores.slug}/track?orderId=${shortId}`;
+      const isPickup = order.delivery_method === 'pickup';
       
       try {
         await resend.emails.send({
           from: 'GoStore <onboarding@resend.dev>', // Use Resend testing domain
           to: order.customer_email,
-          subject: `Your order from ${order.stores.name} has been shipped!`,
+          subject: isPickup
+            ? `Your order from ${order.stores.name} is ready for pickup!`
+            : `Your order from ${order.stores.name} has been shipped!`,
           html: `
             <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
               <h1 style="color: #333;">Great news, ${order.customer_name}!</h1>
-              <p>Your recent order (<strong>#${shortId}</strong>) from <strong>${order.stores.name}</strong> is now on its way.</p>
+              <p>Your recent order (<strong>#${shortId}</strong>) from <strong>${order.stores.name}</strong> is ${isPickup ? "ready for pickup" : "now on its way"}.</p>
               <div style="margin: 30px 0;">
                 <a href="${trackingUrl}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
                   Track Your Order

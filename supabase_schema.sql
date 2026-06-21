@@ -19,6 +19,13 @@ CREATE TABLE IF NOT EXISTS public.stores (
     description TEXT,
     delivery_zones JSONB DEFAULT '[]'::jsonb,
     delivery_payment_option TEXT DEFAULT 'checkout',
+    address_formatted TEXT,
+    address_place_id TEXT,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    pickup_enabled BOOLEAN DEFAULT false,
+    dispatch_enabled BOOLEAN DEFAULT true,
+    pickup_radius_km NUMERIC DEFAULT 5,
     visits INTEGER DEFAULT 0,
     collections JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -50,6 +57,9 @@ CREATE TABLE IF NOT EXISTS public.orders (
     customer_phone TEXT,
     customer_email TEXT,
     customer_address TEXT,
+    delivery_method TEXT CHECK (delivery_method IN ('pickup', 'dispatch')),
+    customer_latitude DOUBLE PRECISION,
+    customer_longitude DOUBLE PRECISION,
     items JSONB NOT NULL, -- List of {productId, quantity, price}
     total NUMERIC NOT NULL,
     delivery_fee NUMERIC DEFAULT 0,

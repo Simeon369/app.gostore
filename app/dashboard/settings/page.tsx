@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { User, Store, Truck, Shield, CheckCircle2, Loader2, Plus, Trash2, Edit2, Wallet } from "lucide-react";
+import { User, Store, Truck, Shield, CheckCircle2, Loader2, Wallet, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createClient } from "../../../utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,9 @@ import {
   uploadStoreLogo,
   STORE_LOGOS_BUCKET,
 } from "@/lib/store-logo";
+import { AddressAutocomplete } from "@/components/maps/address-autocomplete";
+import { StaticMapPreview } from "@/components/maps/static-map-preview";
+import type { GeoLocation } from "@/lib/types";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, '');
@@ -56,11 +59,10 @@ export default function SettingsPage() {
   const [isEditingBank, setIsEditingBank] = useState(false);
 
   // Delivery State
-  const [deliveryZones, setDeliveryZones] = useState<any[]>([]);
-  const [newZoneName, setNewZoneName] = useState("");
-  const [newZonePrice, setNewZonePrice] = useState("");
-  const [newZonePayOnArrival, setNewZonePayOnArrival] = useState(true);
-  const [deliveryPaymentOption, setDeliveryPaymentOption] = useState("checkout");
+  const [shopAddress, setShopAddress] = useState<GeoLocation | null>(null);
+  const [pickupEnabled, setPickupEnabled] = useState(false);
+  const [dispatchEnabled, setDispatchEnabled] = useState(true);
+  const [pickupRadiusKm, setPickupRadiusKm] = useState("5");
 
   const { data: store, isLoading } = useQuery({
     queryKey: ['settings-store'],
@@ -98,8 +100,21 @@ export default function SettingsPage() {
         accountName: store.account_name || "",
         isVerified: !!(store.bank_code && store.account_number && store.account_name),
       });
-      setDeliveryZones(store.delivery_zones || []);
-      setDeliveryPaymentOption(store.delivery_payment_option || "checkout");
+      if (store.address_formatted && store.latitude != null && store.longitude != null) {
+        setShopAddress({
+          formatted: store.address_formatted,
+          placeId: store.address_place_id || undefined,
+          lat: store.latitude,
+          lng: store.longitude,
+        });
+      } else if (store.address_formatted) {
+        setShopAddress({ formatted: store.address_formatted });
+      } else {
+        setShopAddress(null);
+      }
+      setPickupEnabled(!!store.pickup_enabled);
+      setDispatchEnabled(store.dispatch_enabled !== false);
+      setPickupRadiusKm(String(store.pickup_radius_km ?? 5));
       setLogoPreview(store.logo || null);
       setLogoFile(null);
       setRemoveLogo(false);
@@ -201,36 +216,35 @@ export default function SettingsPage() {
     }
   };
 
-  const handleAddDeliveryZone = () => {
-    if (!newZoneName || !newZonePrice) return;
-    const newZone = {
-      id: Math.random().toString(36).substring(7),
-      name: newZoneName,
-      price: Number(newZonePrice),
-      payOnArrival: newZonePayOnArrival
-    };
-    setDeliveryZones([...deliveryZones, newZone]);
-    setNewZoneName("");
-    setNewZonePrice("");
-    setNewZonePayOnArrival(true);
-  };
+  const hasShopCoordinates =
+    shopAddress?.lat != null && shopAddress?.lng != null;
 
-  const handleRemoveDeliveryZone = (id: string) => {
-    setDeliveryZones(deliveryZones.filter(z => z.id !== id));
-  };
-
-  const handleSaveDeliveryZones = async () => {
+  const handleSaveDeliverySettings = async () => {
     if (!store) return;
+    if (!dispatchEnabled && !pickupEnabled) {
+      toast.error("Enable at least one delivery method");
+      return;
+    }
+    if (pickupEnabled && !hasShopCoordinates) {
+      toast.error("Set your shop address before enabling pickup");
+      return;
+    }
     setSaving(true);
     try {
       const { error } = await supabase
         .from('stores')
-        .update({ 
-          delivery_zones: deliveryZones,
-          delivery_payment_option: deliveryPaymentOption
+        .update({
+          address_formatted: shopAddress?.formatted || null,
+          address_place_id: shopAddress?.placeId || null,
+          latitude: shopAddress?.lat ?? null,
+          longitude: shopAddress?.lng ?? null,
+          pickup_enabled: pickupEnabled && hasShopCoordinates,
+          dispatch_enabled: dispatchEnabled,
+          pickup_radius_km: Number(pickupRadiusKm) || 5,
         })
         .eq('id', store.id);
       if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['settings-store'] });
       toast.success("Delivery configuration saved successfully!");
     } catch (err: any) {
       toast.error("Failed to save delivery configuration: " + err.message);
@@ -546,108 +560,84 @@ export default function SettingsPage() {
             <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
               <div>
                 <h2 className="text-xl lg:text-2xl font-black text-foreground mb-1">Delivery Settings</h2>
-                <p className="text-xs lg:text-sm text-muted-foreground">Configure how delivery fees are paid and manage delivery locations.</p>
+                <p className="text-xs lg:text-sm text-muted-foreground">Set your shop location and choose how customers receive orders.</p>
               </div>
 
-              {/* Delivery Payment Option */}
               <div className="flex flex-col gap-4 p-5 lg:p-6 rounded-[32px] bg-muted/30 border border-border">
-                <div>
-                  <h3 className="text-sm font-bold text-foreground mb-1">Delivery Fee Payment Method</h3>
-                  <p className="text-xs text-muted-foreground">Decide if customers pay shipping during online checkout or directly to your courier.</p>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-bold text-foreground">Shop Address</h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <label className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border cursor-pointer hover:border-primary/30 transition-all">
-                    <input 
-                      type="radio" 
-                      name="deliveryPaymentOption"
-                      value="checkout"
-                      checked={deliveryPaymentOption === "checkout"}
-                      onChange={() => setDeliveryPaymentOption("checkout")}
-                      className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-bold text-sm text-foreground">Pay at Checkout</span>
-                      <span className="text-[10px] text-muted-foreground">Added to order total and paid online</span>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border cursor-pointer hover:border-primary/30 transition-all">
-                    <input 
-                      type="radio" 
-                      name="deliveryPaymentOption"
-                      value="arrival"
-                      checked={deliveryPaymentOption === "arrival"}
-                      onChange={() => setDeliveryPaymentOption("arrival")}
-                      className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-bold text-sm text-foreground">Pay on Arrival</span>
-                      <span className="text-[10px] text-muted-foreground">Paid directly to the courier when product arrives</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Add New Zone */}
-              <div className="p-5 lg:p-6 rounded-[32px] bg-muted/30 border border-border flex flex-col gap-4">
-                <h3 className="text-sm font-bold text-foreground">Add Delivery Zone</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input 
-                    type="text" 
-                    value={newZoneName}
-                    onChange={(e) => setNewZoneName(e.target.value)}
-                    placeholder="e.g. Lagos Island"
-                    className="w-full px-4 py-3 rounded-xl bg-background border border-border focus:border-primary/50 outline-none transition-all text-sm font-medium text-foreground"
+                <p className="text-xs text-muted-foreground">Required to offer pickup. Customers can get directions to your store.</p>
+                <AddressAutocomplete
+                  value={shopAddress?.formatted || ""}
+                  onChange={setShopAddress}
+                  placeholder="Search your shop address..."
+                />
+                {hasShopCoordinates && (
+                  <StaticMapPreview
+                    lat={shopAddress!.lat!}
+                    lng={shopAddress!.lng!}
+                    address={shopAddress!.formatted}
                   />
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">₦</span>
-                    <input 
-                      type="number" 
-                      value={newZonePrice}
-                      onChange={(e) => setNewZonePrice(e.target.value)}
-                      placeholder="3500"
-                      className="w-full pl-8 pr-4 py-3 rounded-xl bg-background border border-border focus:border-primary/50 outline-none transition-all text-sm font-medium text-foreground"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-end mt-2">
-                  <button 
-                    onClick={handleAddDeliveryZone}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-foreground text-background font-bold text-xs hover:bg-foreground/90 transition-all"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add Zone
-                  </button>
-                </div>
-              </div>
-
-              {/* Zone List */}
-              <div className="flex flex-col gap-3">
-                <h3 className="text-sm font-bold text-foreground px-1">Configured Delivery Zones</h3>
-                {deliveryZones.map((zone) => (
-                  <div key={zone.id} className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card/50">
-                    <div className="flex flex-col gap-1">
-                      <h4 className="font-bold text-sm text-foreground">{zone.name}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        Fee: <span className="font-bold text-foreground">₦{zone.price.toLocaleString()}</span>
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => handleRemoveDeliveryZone(zone.id)}
-                      className="w-8 h-8 rounded-full flex items-center justify-center bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                {deliveryZones.length === 0 && (
-                  <div className="text-center py-8 text-sm text-muted-foreground italic">
-                    No delivery zones configured yet.
-                  </div>
                 )}
               </div>
 
+              <div className="flex flex-col gap-4 p-5 lg:p-6 rounded-[32px] bg-muted/30 border border-border">
+                <h3 className="text-sm font-bold text-foreground">Pickup Radius</h3>
+                <p className="text-xs text-muted-foreground">Customers within this distance will see pickup recommended at checkout.</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={pickupRadiusKm}
+                    onChange={(e) => setPickupRadiusKm(e.target.value)}
+                    className="w-24 px-4 py-3 rounded-xl bg-background border border-border focus:border-primary/50 outline-none text-sm font-medium text-foreground"
+                  />
+                  <span className="text-sm text-muted-foreground font-medium">km</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-foreground px-1">Delivery Methods</h3>
+                <label className={cn(
+                  "flex items-center gap-3 p-4 rounded-2xl bg-card border border-border transition-all",
+                  !hasShopCoordinates ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-primary/30",
+                )}>
+                  <input
+                    type="checkbox"
+                    checked={pickupEnabled}
+                    disabled={!hasShopCoordinates}
+                    onChange={(e) => setPickupEnabled(e.target.checked)}
+                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary accent-primary"
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm text-foreground">Offer Pickup</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {hasShopCoordinates
+                        ? "Customers collect from your shop — no delivery fee"
+                        : "Save a shop address above to enable pickup"}
+                    </span>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border cursor-pointer hover:border-primary/30 transition-all">
+                  <input
+                    type="checkbox"
+                    checked={dispatchEnabled}
+                    onChange={(e) => setDispatchEnabled(e.target.checked)}
+                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary accent-primary"
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm text-foreground">Offer Dispatch Delivery</span>
+                    <span className="text-[10px] text-muted-foreground">Product paid online — delivery fee paid to rider on arrival</span>
+                  </div>
+                </label>
+              </div>
+
               <div className="mt-4">
-                <button 
-                  onClick={handleSaveDeliveryZones}
+                <button
+                  onClick={handleSaveDeliverySettings}
                   disabled={saving}
                   className="w-full px-8 py-5 rounded-[24px] brand-gradient text-primary-foreground font-black flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(158,226,55,0.3)] text-xs lg:text-sm uppercase tracking-wider disabled:opacity-50"
                 >

@@ -25,6 +25,7 @@ import {
   formatWhatsAppNumber,
 } from "@/lib/whatsapp-messages";
 import { calculatePlatformFee, calculateVendorPayout } from "@/lib/commission";
+import { getDeliveryMethodLabel } from "@/lib/delivery-utils";
 
 interface Order {
   id: string;
@@ -33,6 +34,7 @@ interface Order {
   customer_address: string | null;
   total: number;
   delivery_fee: number;
+  delivery_method?: string | null;
   status: string;
   source: string | null;
   created_at: string;
@@ -468,7 +470,12 @@ export default function TransactionsClient({
                           {order.customer_phone || "No phone"}
                         </p>
                         <p className="text-muted-foreground text-xs mt-1">
-                          {order.customer_address}
+                          {order.delivery_method === "pickup"
+                            ? "Pickup at vendor store"
+                            : order.customer_address}
+                        </p>
+                        <p className="text-[10px] font-bold text-primary mt-1 uppercase tracking-wider">
+                          {getDeliveryMethodLabel(order.delivery_method)}
                         </p>
                       </div>
                       <div>
