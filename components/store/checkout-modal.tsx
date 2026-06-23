@@ -21,7 +21,8 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/utils/cn";
 import { toast } from "sonner";
 import { getPlatformBankDetails, isManualTransferMode } from "@/lib/payment-config";
-import type { DeliveryMethod } from "@/lib/types";
+import type { DeliveryMethod, DeliveryZone, DeliveryPaymentOption } from "@/lib/types";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 interface CheckoutModalProps {
   product: any;
@@ -43,14 +44,24 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+  const [selectedZoneId, setSelectedZoneId] = useState<string | "on_delivery" | null>(null);
 
   const pickupEnabled = !!store.pickup_enabled;
   const dispatchEnabled = store.dispatch_enabled !== false;
+  
+  const deliveryZones: DeliveryZone[] = store.delivery_zones || [];
+  const deliveryPaymentOption: DeliveryPaymentOption = store.delivery_payment_option || "checkout";
 
   const manualMode = isManualTransferMode();
   const bankDetails = getPlatformBankDetails();
-  const checkoutTotal = Number(product.price);
-  const deliveryFee = 0;
+  
+  let deliveryFee = 0;
+  if (deliveryMethod === "dispatch" && selectedZoneId && selectedZoneId !== "on_delivery") {
+    const zone = deliveryZones.find(z => z.id === selectedZoneId);
+    if (zone) deliveryFee = zone.fee;
+  }
+  
+  const checkoutTotal = Number(product.price) + deliveryFee;
 
   const resolvedCustomerAddress =
     deliveryMethod === "pickup"
@@ -68,9 +79,16 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     }
   }, [pickupEnabled, dispatchEnabled]);
 
+  const requiresZoneSelection = deliveryMethod === "dispatch" && (
+    deliveryPaymentOption === "checkout" || 
+    (deliveryPaymentOption === "optional" && deliveryZones.length > 0)
+  );
+
+  const hasValidZone = !requiresZoneSelection || !!selectedZoneId;
+
   const hasValidDelivery =
     (deliveryMethod === "pickup" && pickupEnabled) ||
-    (deliveryMethod === "dispatch" && dispatchEnabled);
+    (deliveryMethod === "dispatch" && dispatchEnabled && hasValidZone);
 
   const hasValidAddress =
     deliveryMethod === "pickup" ||
@@ -222,7 +240,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     formData.append("customer_address", resolvedCustomerAddress);
     formData.append("items", JSON.stringify(orderItems));
     formData.append("total", String(checkoutTotal));
-    formData.append("delivery_fee", "0");
+    formData.append("delivery_fee", String(deliveryFee));
     formData.append("delivery_method", deliveryMethod || "dispatch");
     if (payload.customer_latitude != null) {
       formData.append("customer_latitude", String(payload.customer_latitude));
@@ -425,7 +443,13 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                       <Truck className="w-4 h-4 flex-shrink-0" />
                       <div>
                         <span className="block">Dispatch Delivery</span>
-                        <span className="text-[10px] font-normal opacity-80">Fee paid to rider on arrival</span>
+                        <span className="text-[10px] font-normal opacity-80">
+                          {deliveryPaymentOption === "checkout" 
+                            ? "Delivery fee paid online" 
+                            : deliveryPaymentOption === "optional"
+                              ? "Pay online or on arrival"
+                              : "Fee paid to rider on arrival"}
+                        </span>
                       </div>
                     </div>
                   </button>
@@ -443,18 +467,44 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
               )}
 
               {deliveryMethod === "dispatch" && (
-                <div className="flex flex-col gap-3">
-                  <input
-                    type="text"
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    placeholder="Enter your delivery address"
-                    required
-                    className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm"
-                  />
-                  <p className="text-[11px] text-muted-foreground leading-relaxed px-1">
-                    Delivery fee is paid directly to the dispatch rider when your order arrives.
-                  </p>
+                <div className="flex flex-col gap-5">
+                  <div className="flex flex-col gap-3">
+                    <input
+                      type="text"
+                      value={customerAddress}
+                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      placeholder="Enter your delivery address"
+                      required
+                      className="w-full px-5 py-4 rounded-2xl bg-muted border border-border text-foreground focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground text-sm"
+                    />
+                  </div>
+
+                  {requiresZoneSelection && (
+                    <div className="flex flex-col gap-2">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Select Delivery Zone</h4>
+                      <CustomSelect
+                        options={[
+                          ...deliveryZones.map(zone => ({
+                            label: `${zone.name} — ₦${zone.fee.toLocaleString()}`,
+                            value: zone.id
+                          })),
+                          ...(deliveryPaymentOption === "optional" ? [{
+                            label: "Pay rider on delivery (₦0 upfront)",
+                            value: "on_delivery"
+                          }] : [])
+                        ]}
+                        value={selectedZoneId || ""}
+                        onChange={(opt) => setSelectedZoneId(opt.value)}
+                        placeholder="Select your location..."
+                      />
+                    </div>
+                  )}
+
+                  {(!requiresZoneSelection || selectedZoneId === "on_delivery") && (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed px-1">
+                      Delivery fee is paid directly to the dispatch rider when your order arrives.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

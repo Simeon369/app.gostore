@@ -30,6 +30,14 @@ export type PayoutStatus = "unsettled" | "settled";
 
 export type DeliveryMethod = "pickup" | "dispatch";
 
+export type DeliveryPaymentOption = "checkout" | "on_delivery" | "optional";
+
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  fee: number;
+}
+
 export interface GeoLocation {
   formatted: string;
   placeId?: string;
@@ -44,7 +52,8 @@ export interface StoreLocation {
   longitude?: number;
   pickupEnabled?: boolean;
   dispatchEnabled?: boolean;
-  pickupRadiusKm?: number;
+  deliveryZones?: DeliveryZone[];
+  deliveryPaymentOption?: DeliveryPaymentOption;
 }
 
 export interface OrderItem {

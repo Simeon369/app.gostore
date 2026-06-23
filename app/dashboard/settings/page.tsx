@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { User, Store, Truck, Shield, CheckCircle2, Loader2, Wallet, MapPin } from "lucide-react";
+import { User, Store, Truck, Shield, CheckCircle2, Loader2, Wallet, MapPin, Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createClient } from "../../../utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,8 @@ import {
   STORE_LOGOS_BUCKET,
 } from "@/lib/store-logo";
 import { AddressAutocomplete } from "@/components/maps/address-autocomplete";
-import type { GeoLocation } from "@/lib/types";
+import type { GeoLocation, DeliveryZone, DeliveryPaymentOption } from "@/lib/types";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 const formatWhatsAppNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, '');
@@ -61,6 +62,8 @@ export default function SettingsPage() {
   const [shopAddress, setShopAddress] = useState<GeoLocation | null>(null);
   const [pickupEnabled, setPickupEnabled] = useState(false);
   const [dispatchEnabled, setDispatchEnabled] = useState(true);
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [deliveryPaymentOption, setDeliveryPaymentOption] = useState<DeliveryPaymentOption>("checkout");
 
   const { data: store, isLoading } = useQuery({
     queryKey: ['settings-store'],
@@ -105,6 +108,8 @@ export default function SettingsPage() {
       }
       setPickupEnabled(!!store.pickup_enabled);
       setDispatchEnabled(store.dispatch_enabled !== false);
+      setDeliveryZones(store.delivery_zones || []);
+      setDeliveryPaymentOption(store.delivery_payment_option || "checkout");
       setLogoPreview(store.logo || null);
       setLogoFile(null);
       setRemoveLogo(false);
@@ -230,6 +235,8 @@ export default function SettingsPage() {
           pickup_enabled: pickupEnabled && hasShopAddress,
           dispatch_enabled: dispatchEnabled,
           pickup_radius_km: null,
+          delivery_zones: deliveryZones,
+          delivery_payment_option: deliveryPaymentOption,
         })
         .eq('id', store.id);
       if (error) throw error;
@@ -597,9 +604,103 @@ export default function SettingsPage() {
                   />
                   <div className="flex flex-col">
                     <span className="font-bold text-sm text-foreground">Offer Dispatch Delivery</span>
-                    <span className="text-[10px] text-muted-foreground">Product paid online — delivery fee paid to rider on arrival</span>
+                    <span className="text-[10px] text-muted-foreground">Deliver orders directly to your customers</span>
                   </div>
                 </label>
+
+                {dispatchEnabled && (
+                  <div className="flex flex-col gap-6 p-5 lg:p-6 rounded-[24px] bg-card border border-border mt-2">
+                    <div className="flex flex-col gap-2">
+                      <h4 className="text-sm font-bold text-foreground">Delivery Payment Option</h4>
+                      <p className="text-[10px] text-muted-foreground mb-2">How should customers pay for delivery?</p>
+                      <CustomSelect
+                        options={[
+                          { label: "Pay Upfront at Checkout", value: "checkout" },
+                          { label: "Pay Rider on Delivery", value: "on_delivery" },
+                          { label: "Optional (Let Customer Choose)", value: "optional" }
+                        ]}
+                        value={deliveryPaymentOption}
+                        onChange={(opt) => setDeliveryPaymentOption(opt.value as DeliveryPaymentOption)}
+                        placeholder="Select Payment Option"
+                      />
+                    </div>
+
+                    <div className="h-[1px] bg-border my-1" />
+
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground">Delivery Zones</h4>
+                          <p className="text-[10px] text-muted-foreground">Set delivery fees for different locations</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryZones([...deliveryZones, { id: crypto.randomUUID(), name: "", fee: 0 }])}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-all text-[10px] font-black uppercase tracking-widest"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add Zone
+                        </button>
+                      </div>
+
+                      {deliveryZones.length === 0 ? (
+                        <div className="py-6 text-center rounded-xl border border-dashed border-border bg-muted/30">
+                          <p className="text-xs text-muted-foreground font-medium">No delivery zones added.</p>
+                          {(deliveryPaymentOption === "checkout" || deliveryPaymentOption === "optional") && (
+                            <p className="text-[10px] text-amber-500 mt-1 font-bold">You must add at least one zone to collect fees upfront.</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          {deliveryZones.map((zone, index) => (
+                            <div key={zone.id} className="flex items-start sm:items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border">
+                              <div className="flex-1 flex flex-col sm:flex-row gap-3">
+                                <div className="flex-1 flex flex-col gap-1.5">
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Zone Name</label>
+                                  <input
+                                    type="text"
+                                    value={zone.name}
+                                    onChange={(e) => {
+                                      const newZones = [...deliveryZones];
+                                      newZones[index].name = e.target.value;
+                                      setDeliveryZones(newZones);
+                                    }}
+                                    placeholder="e.g. Lagos Island"
+                                    className="w-full px-3 py-2 rounded-lg bg-card border border-border outline-none focus:border-primary/50 text-xs font-bold"
+                                  />
+                                </div>
+                                <div className="flex-1 sm:max-w-[150px] flex flex-col gap-1.5">
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Fee (₦)</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={zone.fee}
+                                    onChange={(e) => {
+                                      const newZones = [...deliveryZones];
+                                      newZones[index].fee = Number(e.target.value);
+                                      setDeliveryZones(newZones);
+                                    }}
+                                    placeholder="0"
+                                    className="w-full px-3 py-2 rounded-lg bg-card border border-border outline-none focus:border-primary/50 text-xs font-bold [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]"
+                                  />
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeliveryZones(deliveryZones.filter(z => z.id !== zone.id));
+                                }}
+                                className="p-2.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-all mt-[22px] sm:mt-5"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4">
