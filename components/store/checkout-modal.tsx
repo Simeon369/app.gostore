@@ -48,19 +48,19 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
 
   const pickupEnabled = !!store.pickup_enabled;
   const dispatchEnabled = store.dispatch_enabled !== false;
-  
+
   const deliveryZones: DeliveryZone[] = store.delivery_zones || [];
   const deliveryPaymentOption: DeliveryPaymentOption = store.delivery_payment_option || "checkout";
 
   const manualMode = isManualTransferMode();
   const bankDetails = getPlatformBankDetails();
-  
+
   let deliveryFee = 0;
   if (deliveryMethod === "dispatch" && selectedZoneId && selectedZoneId !== "on_delivery") {
     const zone = deliveryZones.find(z => z.id === selectedZoneId);
     if (zone) deliveryFee = zone.fee;
   }
-  
+
   const checkoutTotal = Number(product.price) + deliveryFee;
 
   const resolvedCustomerAddress =
@@ -80,7 +80,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   }, [pickupEnabled, dispatchEnabled]);
 
   const requiresZoneSelection = deliveryMethod === "dispatch" && (
-    deliveryPaymentOption === "checkout" || 
+    deliveryPaymentOption === "checkout" ||
     (deliveryPaymentOption === "optional" && deliveryZones.length > 0)
   );
 
@@ -444,8 +444,8 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                       <div>
                         <span className="block">Dispatch Delivery</span>
                         <span className="text-[10px] font-normal opacity-80">
-                          {deliveryPaymentOption === "checkout" 
-                            ? "Delivery fee paid online" 
+                          {deliveryPaymentOption === "checkout"
+                            ? "Delivery fee paid online"
                             : deliveryPaymentOption === "optional"
                               ? "Pay online or on arrival"
                               : "Fee paid to rider on arrival"}
@@ -522,20 +522,20 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                   <div className="flex flex-col gap-3 text-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Bank</span>
-                      <span className="font-bold">{bankDetails.bankName}</span>
+                      <span className="font-bold text-right">{bankDetails.bankName}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Account Name</span>
-                      <span className="font-bold">{bankDetails.accountName}</span>
+                      <span className="font-bold text-right">{bankDetails.accountName}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Account Number</span>
+                      <span className="text-muted-foreground text-right">Account Number</span>
                       <button
                         type="button"
                         onClick={() =>
                           copyToClipboard(bankDetails.accountNumber, "Account number")
                         }
-                        className="font-bold flex items-center gap-1.5 hover:text-primary transition-colors"
+                        className="font-bold text-right flex items-center gap-1.5 hover:text-primary transition-colors"
                       >
                         {bankDetails.accountNumber}
                         <Copy className="w-3.5 h-3.5" />
@@ -546,7 +546,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                       <button
                         type="button"
                         onClick={() => copyToClipboard(String(checkoutTotal), "Amount")}
-                        className="font-black text-primary flex items-center gap-1.5"
+                        className="font-black text-right text-primary flex items-center gap-1.5"
                       >
                         ₦{checkoutTotal.toLocaleString()}
                         <Copy className="w-3.5 h-3.5" />
@@ -557,7 +557,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
                       <button
                         type="button"
                         onClick={() => copyToClipboard(paymentReference, "Reference")}
-                        className="font-mono font-bold flex items-center gap-1.5 hover:text-primary transition-colors"
+                        className="font-mono text-right font-bold flex items-center gap-1.5 hover:text-primary transition-colors"
                       >
                         {paymentReference}
                         <Copy className="w-3.5 h-3.5" />
