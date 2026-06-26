@@ -36,17 +36,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized to modify this order" }, { status: 403 });
     }
 
-    // 3. Vendors may only mark Paid orders as Shipped
-    if (status !== "Shipped") {
+    // 3. Vendors may only mark orders as Paid or Shipped
+    if (status !== "Shipped" && status !== "Paid") {
       return NextResponse.json(
-        { error: "Vendors can only mark orders as Shipped" },
+        { error: "Vendors can only mark orders as Paid or Shipped" },
         { status: 400 },
       );
     }
 
-    if (order.status !== "Paid") {
+    if (status === "Shipped" && order.status !== "Paid") {
       return NextResponse.json(
         { error: "Only paid orders can be marked as shipped" },
+        { status: 400 },
+      );
+    }
+
+    if (status === "Paid" && order.status !== "Pending") {
+      return NextResponse.json(
+        { error: "Only pending orders can be marked as paid" },
         { status: 400 },
       );
     }

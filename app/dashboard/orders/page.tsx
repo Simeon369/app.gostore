@@ -36,6 +36,7 @@ export default function OrdersPage() {
   const supabase = createClient();
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [whatsappModalOrder, setWhatsappModalOrder] = useState<any | null>(null);
 
   const updateOrderStatus = useMutation({
     mutationFn: async ({
@@ -80,6 +81,7 @@ export default function OrdersPage() {
               ? "Order set for pickup!"
               : "Order shipped!",
           );
+          setWhatsappModalOrder({ ...order, newStatus: "Shipped" });
         },
       },
     );
@@ -383,7 +385,17 @@ export default function OrdersPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
+                {order.receipt_url && (
+                  <a
+                    href={order.receipt_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-muted text-foreground hover:bg-muted/80 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest"
+                  >
+                    Check Receipt
+                  </a>
+                )}
                 {order.status === "Paid" && (
                   <button
                     onClick={() => handleShipOrder(order)}
@@ -405,7 +417,10 @@ export default function OrdersPage() {
                 {order.status === "Pending" && (
                   <button
                     onClick={() => updateOrderStatus.mutate({ orderId: order.id, status: "Paid" }, {
-                      onSuccess: () => toast.success("Payment confirmed!")
+                      onSuccess: () => {
+                        toast.success("Payment confirmed!");
+                        setWhatsappModalOrder({ ...order, newStatus: "Paid" });
+                      }
                     })}
                     disabled={updatingOrderId === order.id}
                     className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest disabled:opacity-50"
@@ -436,6 +451,50 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+
+      {/* WhatsApp Modal */}
+      {whatsappModalOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-background w-full max-w-md rounded-[32px] border border-border shadow-2xl p-8 flex flex-col gap-6 text-center"
+          >
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto text-emerald-500">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold mb-2">Notify Customer?</h2>
+              <p className="text-sm text-muted-foreground">
+                Would you like to send a WhatsApp message to {whatsappModalOrder.customer_name} to let them know their order is {whatsappModalOrder.newStatus === "Paid" ? "confirmed" : whatsappModalOrder.delivery_method === "pickup" ? "ready for pickup" : "shipped"}?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setWhatsappModalOrder(null)}
+                className="flex-1 px-6 py-3 rounded-2xl bg-muted text-muted-foreground font-bold hover:bg-muted/80 transition-all text-sm"
+              >
+                Skip
+              </button>
+              <button
+                onClick={() => {
+                  const message = whatsappModalOrder.newStatus === "Paid" 
+                    ? `Hello ${whatsappModalOrder.customer_name}! We have received your payment for order #${whatsappModalOrder.id.split('-')[0].toUpperCase()}. We will begin processing it shortly.`
+                    : whatsappModalOrder.delivery_method === "pickup"
+                      ? `Hello ${whatsappModalOrder.customer_name}! Your order #${whatsappModalOrder.id.split('-')[0].toUpperCase()} is ready for pickup.`
+                      : `Hello ${whatsappModalOrder.customer_name}! Your order #${whatsappModalOrder.id.split('-')[0].toUpperCase()} has been shipped.`;
+                  const url = `https://wa.me/${whatsappModalOrder.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                  window.open(url, '_blank');
+                  setWhatsappModalOrder(null);
+                }}
+                className="flex-1 px-6 py-3 rounded-2xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-all text-sm flex items-center justify-center gap-2"
+              >
+                Send Message
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
