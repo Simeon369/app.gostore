@@ -22,7 +22,7 @@ const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Products", href: "/dashboard/products", icon: Package },
-  { name: "Payouts", href: "/dashboard/payouts", icon: BarChart3 },
+  { name: "Billing", href: "/dashboard/billing", icon: BarChart3 },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
