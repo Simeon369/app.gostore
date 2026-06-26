@@ -20,7 +20,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cn } from "@/utils/cn";
 import { toast } from "sonner";
-import { getPlatformBankDetails, isManualTransferMode } from "@/lib/payment-config";
 import type { DeliveryMethod, DeliveryZone, DeliveryPaymentOption } from "@/lib/types";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -52,8 +51,12 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
   const deliveryZones: DeliveryZone[] = store.delivery_zones || [];
   const deliveryPaymentOption: DeliveryPaymentOption = store.delivery_payment_option || "checkout";
 
-  const manualMode = isManualTransferMode();
-  const bankDetails = getPlatformBankDetails();
+  const manualMode = true;
+  const bankDetails = {
+    bankName: store.bank_name || "N/A",
+    accountName: store.account_name || "N/A",
+    accountNumber: store.account_number || "N/A",
+  };
 
   let deliveryFee = 0;
   if (deliveryMethod === "dispatch" && selectedZoneId && selectedZoneId !== "on_delivery") {
@@ -127,17 +130,6 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     setReceiptPreview(null);
   }, [receiptFile]);
 
-  useEffect(() => {
-    if (manualMode) return;
-    const script = document.createElement("script");
-    script.src = "https://js.paystack.co/v1/inline.js";
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, [manualMode]);
-
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied!`);
@@ -179,49 +171,6 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     customer_latitude: null as null,
     customer_longitude: null as null,
   });
-
-  const handlePaystackCheckout = async () => {
-    const paymentRef = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-    // @ts-ignore
-    if (!window.PaystackPop) {
-      throw new Error("Payment gateway is still loading. Please wait a moment and try again.");
-    }
-
-    const payload = buildOrderPayload();
-
-    // @ts-ignore
-    const handler = window.PaystackPop.setup({
-      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-      email: customerEmail,
-      amount: Math.round(checkoutTotal * 100),
-      currency: "NGN",
-      ref: paymentRef,
-      subaccount: store.paystack_sub_account_code || undefined,
-      metadata: {
-        store_id: store.id,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_email: customerEmail,
-        customer_address: resolvedCustomerAddress,
-        customer_latitude: payload.customer_latitude,
-        customer_longitude: payload.customer_longitude,
-        delivery_method: payload.delivery_method,
-        items: JSON.stringify(orderItems),
-        total: checkoutTotal,
-        delivery_fee: deliveryFee,
-        source: new URLSearchParams(window.location.search).get("source") || "Direct",
-      },
-      callback: function (response: { reference: string }) {
-        window.location.href = `/api/payment/verify/paystack?ref=${response.reference}&storeId=${store.id}`;
-      },
-      onClose: function () {
-        setLoading(false);
-        toast.error("Payment window closed");
-      },
-    });
-    handler.openIframe();
-  };
 
   const handleManualCheckout = async () => {
     if (!receiptFile) {
@@ -295,11 +244,7 @@ export function CheckoutModal({ product, store, onClose }: CheckoutModalProps) {
     setLoading(true);
 
     try {
-      if (manualMode) {
-        await handleManualCheckout();
-      } else {
-        await handlePaystackCheckout();
-      }
+      await handleManualCheckout();
     } catch (error: unknown) {
       console.error("Checkout error:", error);
       const message =

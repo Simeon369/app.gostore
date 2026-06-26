@@ -403,10 +403,20 @@ export default function OrdersPage() {
                   </button>
                 )}
                 {order.status === "Pending" && (
-                  <p className="text-xs text-muted-foreground font-medium py-3">
-                    Payment is being verified. You&apos;ll be notified when
-                    ready to ship.
-                  </p>
+                  <button
+                    onClick={() => updateOrderStatus.mutate({ orderId: order.id, status: "Paid" }, {
+                      onSuccess: () => toast.success("Payment confirmed!")
+                    })}
+                    disabled={updatingOrderId === order.id}
+                    className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                  >
+                    {updatingOrderId === order.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
+                    Confirm Payment
+                  </button>
                 )}
                 <button className="p-3 rounded-2xl glass-card hover:bg-muted transition-all flex items-center justify-center">
                   <MoreVertical className="w-4 h-4 text-muted-foreground" />

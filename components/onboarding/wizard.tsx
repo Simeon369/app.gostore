@@ -173,24 +173,6 @@ export function OnboardingWizard() {
         if (logoError) throw logoError;
       }
 
-      if (getPaymentMode() === "paystack" && newStore?.id) {
-        const payoutRes = await fetch("/api/payout/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bankCode: bankAccount.bankCode,
-            bankName: bankAccount.bankName,
-            accountNumber: bankAccount.accountNumber,
-            accountName: bankAccount.accountName,
-            storeId: newStore.id,
-          }),
-        });
-        const payoutData = await payoutRes.json();
-        if (!payoutRes.ok || payoutData.status !== "success") {
-          throw new Error(payoutData.error || "Failed to register Paystack settlement account");
-        }
-      }
-
       // Trigger confetti
       confetti({
         particleCount: 150,
@@ -252,7 +234,7 @@ export function OnboardingWizard() {
         <p className="text-sm text-muted-foreground mt-2">
           {step === 1 && "Let's set up your store identity and generate your unique link."}
           {step === 2 && "Pin your shop on the map so nearby customers can pick up orders."}
-          {step === 3 && "Where should we send your 95% split? We process this instantly."}
+          {step === 3 && "Where should customers send their payments? You keep 100%."}
           {step === 4 && "Where do you mostly promote your products?"}
           {step === 5 && "You are live! Time to start making money."}
         </p>
@@ -382,7 +364,7 @@ export function OnboardingWizard() {
               <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex gap-3 text-sm text-primary font-medium">
                 <span className="text-xl leading-none">💡</span>
                 <p>
-                  <strong className="font-black">Simple Payouts:</strong> GoStore takes a flat 5% commission on your sales (capped at ₦10,000). Add your bank details here so we can settle your 95% after each confirmed payment.
+                  <strong className="font-black">Direct Payments:</strong> Customers will send payments directly to this bank account during checkout. You keep 100% of your sales!
                 </p>
               </div>
 

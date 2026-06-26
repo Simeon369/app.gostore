@@ -183,29 +183,24 @@ export default function SettingsPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch('/api/payout/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bankCode: bankAccount.bankCode,
-          bankName: bankAccount.bankName,
-          accountNumber: bankAccount.accountNumber,
-          accountName: bankAccount.accountName,
-          storeId: store.id
+      const { error } = await supabase
+        .from('stores')
+        .update({
+          bank_name: bankAccount.bankName,
+          bank_code: bankAccount.bankCode,
+          account_number: bankAccount.accountNumber,
+          account_name: bankAccount.accountName,
         })
-      });
+        .eq('id', store.id);
 
-      const data = await res.json();
-      if (data.status === 'success') {
-        toast.success("Settlement account registered successfully!");
-        setIsEditingBank(false);
-        queryClient.invalidateQueries({ queryKey: ['settings-store'] });
-        router.refresh();
-      } else {
-        throw new Error(data.error || "Failed to register account");
-      }
+      if (error) throw error;
+
+      toast.success("Receiving account saved successfully!");
+      setIsEditingBank(false);
+      queryClient.invalidateQueries({ queryKey: ['settings-store'] });
+      router.refresh();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error("Failed to save receiving account: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -471,15 +466,15 @@ export default function SettingsPage() {
             <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl lg:text-2xl font-black text-foreground mb-1">Settlement Account</h2>
-                  <p className="text-xs lg:text-sm text-muted-foreground">Verified payouts are sent directly to this account.</p>
+                  <h2 className="text-xl lg:text-2xl font-black text-foreground mb-1">Receiving Bank Account</h2>
+                  <p className="text-xs lg:text-sm text-muted-foreground">Customers will send payments directly to this account during checkout.</p>
                 </div>
                 <div className="flex items-center gap-3">
                   
-                  {store?.paystack_sub_account_code ? (
+                  {store?.account_number ? (
                     <div className="flex items-center gap-2 bg-emerald-500/10 text-emerald-500 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider w-fit border border-emerald-500/20">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      Verified
+                      Saved
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 bg-amber-500/10 text-amber-500 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider w-fit border border-amber-500/20">
@@ -519,14 +514,14 @@ export default function SettingsPage() {
                       disabled={saving || !bankAccount.isVerified}
                       className="flex-1 px-8 py-5 rounded-[24px] brand-gradient text-primary-foreground font-black flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(158,226,55,0.3)] text-xs lg:text-sm uppercase tracking-wider disabled:opacity-50"
                     >
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Settlement Details"}
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Receiving Details"}
                     </button>
                   </div>
                 </>
               ) : (
                 <div className="p-6 lg:p-8 rounded-[32px] border border-border bg-card/50 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                   <div className="flex flex-col gap-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Current Settlement Account</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Current Receiving Account</p>
                     <h4 className="text-lg lg:text-xl font-bold text-foreground">{store.account_name}</h4>
                     <p className="text-sm font-medium text-muted-foreground">{store.bank_name} • {store.account_number}</p>
                   </div>
