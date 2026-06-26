@@ -39,6 +39,10 @@ export default function OrdersPage() {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [whatsappModalOrder, setWhatsappModalOrder] = useState<any | null>(null);
   const [loadingReceiptId, setLoadingReceiptId] = useState<string | null>(null);
+  const [confirmModalState, setConfirmModalState] = useState<{
+    order: any;
+    action: "Paid" | "Shipped";
+  } | null>(null);
 
   const handleCheckReceipt = async (orderId: string) => {
     setLoadingReceiptId(orderId);
@@ -414,7 +418,7 @@ export default function OrdersPage() {
                 )}
                 {order.status === "Paid" && (
                   <button
-                    onClick={() => handleShipOrder(order)}
+                    onClick={() => setConfirmModalState({ order, action: "Shipped" })}
                     disabled={updatingOrderId === order.id}
                     className="flex-1 sm:flex-none px-6 py-3 rounded-2xl brand-gradient hover:opacity-90 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-primary-foreground disabled:opacity-50"
                   >
@@ -432,12 +436,7 @@ export default function OrdersPage() {
                 )}
                 {order.status === "Pending" && (
                   <button
-                    onClick={() => updateOrderStatus.mutate({ orderId: order.id, status: "Paid" }, {
-                      onSuccess: () => {
-                        toast.success("Payment confirmed!");
-                        setWhatsappModalOrder({ ...order, newStatus: "Paid" });
-                      }
-                    })}
+                    onClick={() => setConfirmModalState({ order, action: "Paid" })}
                     disabled={updatingOrderId === order.id}
                     className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest disabled:opacity-50"
                   >
@@ -449,9 +448,6 @@ export default function OrdersPage() {
                     Confirm Payment
                   </button>
                 )}
-                <button className="p-3 rounded-2xl glass-card hover:bg-muted transition-all flex items-center justify-center">
-                  <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                </button>
               </div>
             </motion.div>
           ))
@@ -467,6 +463,57 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+
+      {/* Action Confirmation Modal */}
+      {confirmModalState && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-background w-full max-w-md rounded-[32px] border border-border shadow-2xl p-8 flex flex-col gap-6 text-center"
+          >
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold mb-2">Are you sure?</h2>
+              <p className="text-sm text-muted-foreground">
+                {confirmModalState.action === "Paid" 
+                  ? "You are about to confirm that you have received payment for this order. This action cannot be undone."
+                  : confirmModalState.order.delivery_method === "pickup"
+                    ? "You are about to mark this order as ready for pickup. This action cannot be undone."
+                    : "You are about to mark this order as shipped. This action cannot be undone."}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModalState(null)}
+                className="flex-1 px-6 py-3 rounded-2xl bg-muted text-muted-foreground font-bold hover:bg-muted/80 transition-all text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmModalState.action === "Paid") {
+                    updateOrderStatus.mutate({ orderId: confirmModalState.order.id, status: "Paid" }, {
+                      onSuccess: () => {
+                        toast.success("Payment confirmed!");
+                        setWhatsappModalOrder({ ...confirmModalState.order, newStatus: "Paid" });
+                      }
+                    });
+                  } else {
+                    handleShipOrder(confirmModalState.order);
+                  }
+                  setConfirmModalState(null);
+                }}
+                className="flex-1 px-6 py-3 rounded-2xl brand-gradient text-primary-foreground font-bold hover:scale-[1.02] transition-all text-sm flex items-center justify-center gap-2"
+              >
+                Yes, I'm sure
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* WhatsApp Modal */}
       {whatsappModalOrder && (

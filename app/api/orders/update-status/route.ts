@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
@@ -58,9 +59,31 @@ export async function POST(req: Request) {
       );
     }
 
+    let updateData: any = { status };
+
+    if (status === "Paid") {
+      updateData.payment_confirmed_at = new Date().toISOString();
+      updateData.payment_confirmed_by = user.id;
+      
+      if (order.receipt_path) {
+        const admin = createAdminClient();
+        const { error: deleteError } = await admin.storage
+          .from("payment-receipts")
+          .remove([order.receipt_path]);
+          
+        if (!deleteError) {
+          updateData.receipt_url = null;
+          updateData.receipt_path = null;
+          updateData.receipt_deleted_at = updateData.payment_confirmed_at;
+        } else {
+          console.error("Failed to delete receipt:", deleteError);
+        }
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('orders')
-      .update({ status })
+      .update(updateData)
       .eq('id', orderId);
 
     if (updateError) {
