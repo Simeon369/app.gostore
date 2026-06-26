@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
+  Eye,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/utils/cn";
@@ -37,6 +38,21 @@ export default function OrdersPage() {
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [whatsappModalOrder, setWhatsappModalOrder] = useState<any | null>(null);
+  const [loadingReceiptId, setLoadingReceiptId] = useState<string | null>(null);
+
+  const handleCheckReceipt = async (orderId: string) => {
+    setLoadingReceiptId(orderId);
+    try {
+      const res = await fetch(`/api/orders/receipt-url?orderId=${orderId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      window.open(data.url, '_blank');
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load receipt");
+    } finally {
+      setLoadingReceiptId(null);
+    }
+  };
 
   const updateOrderStatus = useMutation({
     mutationFn: async ({
@@ -386,15 +402,15 @@ export default function OrdersPage() {
 
               {/* Actions */}
               <div className="flex gap-3 flex-wrap">
-                {order.receipt_url && (
-                  <a
-                    href={order.receipt_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-muted text-foreground hover:bg-muted/80 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest"
+                {order.receipt_path && (
+                  <button
+                    onClick={() => handleCheckReceipt(order.id)}
+                    disabled={loadingReceiptId === order.id}
+                    className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-muted text-foreground hover:bg-muted/80 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest disabled:opacity-50"
                   >
+                    {loadingReceiptId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                     Check Receipt
-                  </a>
+                  </button>
                 )}
                 {order.status === "Paid" && (
                   <button
