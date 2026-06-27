@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { User, Store, Truck, Shield, CheckCircle2, Loader2, Wallet, MapPin, Plus, Trash2 } from "lucide-react";
+import { User, Store, Truck, Shield, CheckCircle2, Loader2, Wallet, MapPin, Plus, Trash2, PowerOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createClient } from "../../../utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -244,6 +244,25 @@ export default function SettingsPage() {
     }
   };
 
+  const handleToggleStoreStatus = async () => {
+    if (!store) return;
+    const newStatus = store.status === 'Live' ? 'Closed' : 'Live';
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({ status: newStatus })
+        .eq('id', store.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['settings-store'] });
+      toast.success(newStatus === 'Live' ? '✅ Store is now Live!' : '🔒 Store is now Closed to the public.');
+    } catch (err: any) {
+      toast.error('Failed to update store status: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -447,6 +466,33 @@ export default function SettingsPage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              <div className="h-[1px] bg-border my-2" />
+
+              {/* Store Visibility */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-border bg-muted/30">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-black text-foreground">Store Visibility</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {store?.status === 'Closed'
+                      ? 'Your storefront is currently closed. Customers cannot browse or place orders.'
+                      : 'Your storefront is public and accepting orders.'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleToggleStoreStatus}
+                  disabled={saving}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap disabled:opacity-50",
+                    store?.status === 'Closed'
+                      ? 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20'
+                      : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20'
+                  )}
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <PowerOff className="w-4 h-4" />}
+                  {store?.status === 'Closed' ? 'Reopen Store' : 'Close Store'}
+                </button>
               </div>
 
               <div className="mt-4">

@@ -21,6 +21,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getDeliveryMethodLabel, formatOrderDeliveryFee } from "@/lib/delivery-utils";
+import { getOrderTrackingUrl } from "@/lib/urls";
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,6 +43,7 @@ export default function OrdersPage() {
   const [confirmModalState, setConfirmModalState] = useState<{
     order: any;
     action: "Paid" | "Shipped";
+    note: string;
   } | null>(null);
 
   const handleCheckReceipt = async (orderId: string) => {
@@ -91,7 +93,7 @@ export default function OrdersPage() {
     },
   });
 
-  const handleShipOrder = (order: { id: string; delivery_method?: string | null }) => {
+  const handleShipOrder = (order: { id: string; delivery_method?: string | null }, note?: string) => {
     updateOrderStatus.mutate(
       { orderId: order.id, status: "Shipped" },
       {
@@ -101,7 +103,7 @@ export default function OrdersPage() {
               ? "Order set for pickup!"
               : "Order shipped!",
           );
-          setWhatsappModalOrder({ ...order, newStatus: "Shipped" });
+          setWhatsappModalOrder({ ...order, newStatus: "Shipped", vendorNote: note || "" });
         },
       },
     );
@@ -118,11 +120,11 @@ export default function OrdersPage() {
 
       const { data: store } = await supabase
         .from("stores")
-        .select("id")
+        .select("id, slug, name")
         .eq("user_id", user.id)
         .single();
 
-      if (!store) return { orders: [], products: [] };
+      if (!store) return { orders: [], products: [], storeSlug: "", storeName: "" };
 
       // 2. Fetch orders
       const { data: orders } = await supabase
@@ -140,12 +142,16 @@ export default function OrdersPage() {
       return {
         orders: orders || [],
         products: products || [],
+        storeSlug: store.slug,
+        storeName: store.name,
       };
     },
   });
 
   const orders = ordersData?.orders || [];
   const products = ordersData?.products || [];
+  const storeSlug = ordersData?.storeSlug || "";
+  const storeName = ordersData?.storeName || "";
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -418,7 +424,7 @@ export default function OrdersPage() {
                 )}
                 {order.status === "Paid" && (
                   <button
-                    onClick={() => setConfirmModalState({ order, action: "Shipped" })}
+                    onClick={() => setConfirmModalState({ order, action: "Shipped", note: "" })}
                     disabled={updatingOrderId === order.id}
                     className="flex-1 sm:flex-none px-6 py-3 rounded-2xl brand-gradient hover:opacity-90 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-primary-foreground disabled:opacity-50"
                   >
@@ -436,7 +442,7 @@ export default function OrdersPage() {
                 )}
                 {order.status === "Pending" && (
                   <button
-                    onClick={() => setConfirmModalState({ order, action: "Paid" })}
+                    onClick={() => setConfirmModalState({ order, action: "Paid", note: "" })}
                     disabled={updatingOrderId === order.id}
                     className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest disabled:opacity-50"
                   >
@@ -475,15 +481,36 @@ export default function OrdersPage() {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold mb-2">Are you sure?</h2>
-              <p className="text-sm text-muted-foreground">
+            <div className="text-left">
+              <h2 className="text-xl font-bold mb-2 text-center">Are you sure?</h2>
+              <p className="text-sm text-muted-foreground text-center">
                 {confirmModalState.action === "Paid" 
                   ? "You are about to confirm that you have received payment for this order. This action cannot be undone."
                   : confirmModalState.order.delivery_method === "pickup"
                     ? "You are about to mark this order as ready for pickup. This action cannot be undone."
                     : "You are about to mark this order as shipped. This action cannot be undone."}
               </p>
+
+              {/* Optional note — only for Shipped actions */}
+              {confirmModalState.action === "Shipped" && (
+                <div className="mt-5 flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    {confirmModalState.order.delivery_method === "pickup"
+                      ? "Pickup Note (optional)"
+                      : "Shipping Note (optional)"}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={confirmModalState.note}
+                    onChange={(e) => setConfirmModalState({ ...confirmModalState, note: e.target.value })}
+                    placeholder={confirmModalState.order.delivery_method === "pickup"
+                      ? "e.g. We are open Mon–Sat, 10am–6pm. Ask for John at the counter."
+                      : "e.g. Your rider is Michael — 08012345678. He'll reach you in 1–2 hours."}
+                    className="w-full px-4 py-3 rounded-2xl bg-muted border border-border focus:border-primary/50 outline-none transition-all text-sm text-foreground font-medium resize-none leading-relaxed"
+                  />
+                  <p className="text-[10px] text-muted-foreground">This note will be included in the WhatsApp message sent to the customer.</p>
+                </div>
+              )}
             </div>
             <div className="flex gap-3">
               <button
@@ -498,11 +525,11 @@ export default function OrdersPage() {
                     updateOrderStatus.mutate({ orderId: confirmModalState.order.id, status: "Paid" }, {
                       onSuccess: () => {
                         toast.success("Payment confirmed!");
-                        setWhatsappModalOrder({ ...confirmModalState.order, newStatus: "Paid" });
+                        setWhatsappModalOrder({ ...confirmModalState.order, newStatus: "Paid", vendorNote: confirmModalState.note });
                       }
                     });
                   } else {
-                    handleShipOrder(confirmModalState.order);
+                    handleShipOrder(confirmModalState.order, confirmModalState.note);
                   }
                   setConfirmModalState(null);
                 }}
@@ -541,11 +568,22 @@ export default function OrdersPage() {
               </button>
               <button
                 onClick={() => {
+                  const shortId = whatsappModalOrder.id.split('-')[0].toUpperCase();
+                  const trackingUrl = storeSlug
+                    ? getOrderTrackingUrl(storeSlug, shortId)
+                    : '';
+                  const storeLine = storeName ? `*${storeName}*` : 'your store';
+                  const trackingLine = trackingUrl ? `\n\n🔗 *Track your order:*\n${trackingUrl}` : '';
+                  const noteLine = whatsappModalOrder.vendorNote?.trim()
+                    ? `\n\n📌 *Note from the store:*\n${whatsappModalOrder.vendorNote.trim()}`
+                    : '';
+                  const footer = `\n\n---\n_Powered by GoStore — Nigeria's easiest way to sell online._\nCreate your own store at https://gostore.ng 🚀`;
+                  
                   const message = whatsappModalOrder.newStatus === "Paid" 
-                    ? `Hello ${whatsappModalOrder.customer_name}! We have received your payment for order #${whatsappModalOrder.id.split('-')[0].toUpperCase()}. We will begin processing it shortly.`
+                    ? `Hello ${whatsappModalOrder.customer_name}! 👋\n\n✅ *Payment Confirmed!*\nThank you for your order from ${storeLine}. We've received your payment for order *#${shortId}* and will begin processing it shortly.${noteLine}${trackingLine}${footer}`
                     : whatsappModalOrder.delivery_method === "pickup"
-                      ? `Hello ${whatsappModalOrder.customer_name}! Your order #${whatsappModalOrder.id.split('-')[0].toUpperCase()} is ready for pickup.`
-                      : `Hello ${whatsappModalOrder.customer_name}! Your order #${whatsappModalOrder.id.split('-')[0].toUpperCase()} has been shipped.`;
+                      ? `Hello ${whatsappModalOrder.customer_name}! 👋\n\n🎉 *Your order is ready for pickup!*\nYour order *#${shortId}* from ${storeLine} is ready. Please visit our store to collect it.${noteLine}${trackingLine}${footer}`
+                      : `Hello ${whatsappModalOrder.customer_name}! 👋\n\n🚚 *Your order has been shipped!*\nGreat news! Your order *#${shortId}* from ${storeLine} is on its way to you!${noteLine}${trackingLine}${footer}`;
                   const url = `https://wa.me/${whatsappModalOrder.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
                   window.open(url, '_blank');
                   setWhatsappModalOrder(null);

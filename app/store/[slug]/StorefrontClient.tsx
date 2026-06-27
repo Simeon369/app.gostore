@@ -257,6 +257,35 @@ export default function StorefrontClient() {
 
   const { store } = storeData;
 
+  // Show closed screen (but let the owner preview their store)
+  const isClosed = store.status === 'Closed';
+  if (isClosed) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-6">
+        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border border-border">
+          <span className="text-5xl">🔒</span>
+        </div>
+        <div>
+          <h1 className="text-2xl font-black text-foreground mb-2">Store Temporarily Closed</h1>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+            <span className="font-bold text-foreground">{store.name}</span> is not taking orders right now. Check back later or reach out on WhatsApp.
+          </p>
+        </div>
+        {store.whatsapp && (
+          <a
+            href={`https://wa.me/${store.whatsapp}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold text-sm transition-all hover:bg-emerald-500/20"
+          >
+            Contact on WhatsApp
+          </a>
+        )}
+        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Powered by GoStore</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20">
       {/* Success Toast */}
