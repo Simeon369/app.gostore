@@ -577,7 +577,7 @@ export default function OrdersPage() {
                   const noteLine = whatsappModalOrder.vendorNote?.trim()
                     ? `\n\n📌 *Note from the store:*\n${whatsappModalOrder.vendorNote.trim()}`
                     : '';
-                  const footer = `\n\n---\n_Powered by GoStore — Nigeria's easiest way to sell online._\nCreate your own store at https://gostore.ng 🚀`;
+                  const footer = `\n\n---\n_Powered by GoStore — Nigeria's easiest way to sell online🚀.`;
                   
                   const message = whatsappModalOrder.newStatus === "Paid" 
                     ? `Hello ${whatsappModalOrder.customer_name}! 👋\n\n✅ *Payment Confirmed!*\nThank you for your order from ${storeLine}. We've received your payment for order *#${shortId}* and will begin processing it shortly.${noteLine}${trackingLine}${footer}`
